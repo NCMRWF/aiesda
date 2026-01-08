@@ -1,0 +1,19 @@
+keys: information
+obsgroup: 
+obsname: hloswind
+gdasname: 
+bufrmtyp: 
+obsubtyplst: [,] 
+elemcntlst: [,]
+maxindx: 621
+hdrsize: 339
+lutsize: 128
+OBSTORE: HLOSwind 
+HDRFILE: 
+longname: HLOS_Wind
+satinstsnsr: aeolus-hloswind
+elemlist_:  
+brightnessTemperature:
+metdbsubtype: 
+SatID: 
+

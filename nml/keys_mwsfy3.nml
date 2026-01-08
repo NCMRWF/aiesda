@@ -1,0 +1,18 @@
+keys: information
+obsgroup: 
+obsname: mwsfy3
+gdasname: 
+bufrmtyp: 
+obsubtyplst: [,] 
+elemcntlst: [,]
+maxindx: 621
+hdrsize: 339
+lutsize: 128
+OBSTORE: MWSFY3
+HDRFILE: 
+longname: FY3_MWS
+satinstsnsr: fy3-mws
+elemlist_:  
+brightnessTemperature: 
+metdbsubtype: 
+SatID: 

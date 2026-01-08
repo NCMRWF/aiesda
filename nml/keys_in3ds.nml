@@ -1,0 +1,18 @@
+keys: information
+obsgroup: 
+obsname: in3ds
+gdasname: 
+bufrmtyp: 
+obsubtyplst: [,] 
+elemcntlst: [,]
+maxindx: 621
+hdrsize: 339
+lutsize: 128
+OBSTORE: IN3DS
+HDRFILE: 
+longname: INSAT_3D_Sonder
+satinstsnsr: insat3d-sndr
+elemlist_:  
+brightnessTemperature:
+metdbsubtype: 
+SatID: 

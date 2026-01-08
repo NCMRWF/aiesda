@@ -1,0 +1,18 @@
+keys: information
+obsgroup: 
+obsname: gmilow
+gdasname: 
+bufrmtyp: 
+obsubtyplst: [,] 
+elemcntlst: [,]
+maxindx: 621
+hdrsize: 339
+lutsize: 128
+OBSTORE: GMIlow 
+HDRFILE: 
+longname: GMI_Low
+satinstsnsr: gpm1-gmi
+elemlist_:  
+brightnessTemperature:
+metdbsubtype: 
+SatID: 

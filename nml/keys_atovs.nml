@@ -1,0 +1,19 @@
+keys: information
+obsgroup: 
+obsname: atovs
+gdasname: 
+bufrmtyp: 
+obsubtyplst: [21400,] 
+elemcntlst: [,]
+maxindx: 621
+hdrsize: 339
+lutsize: 128
+OBSTORE: ATOVS 
+HDRFILE: 
+longname: ATOVS
+satinstsnsr:  metop1-atovs,metop3-atovs,noaa15-atovs,noaa18-atovs,noaa19-atovs
+elemlist_:  
+brightnessTemperature:
+metdbsubtype: 
+SatID: [3,4,206,209,223,784]
+snsr: hirs,amsua,mhs

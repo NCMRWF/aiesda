@@ -1,0 +1,18 @@
+keys: information
+obsgroup: 
+obsname: grndgps
+gdasname: gpsipw
+bufrmtyp: NC012003
+obsubtyplst: [21700,] 
+elemcntlst: [39,]
+maxindx: 621
+hdrsize: 339
+lutsize: 128
+OBSTORE: GroundGPS
+HDRFILE: 
+longname: Ground_GPS
+satinstsnsr: grndgps
+elemlist_21700:  [3,4,5,6,7,8,1,2] 
+brightnessTemperature:
+metdbsubtype: 
+SatID: 

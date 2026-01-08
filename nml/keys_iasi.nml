@@ -1,0 +1,18 @@
+keys: information
+obsgroup: 
+obsname: iasi
+gdasname: 
+bufrmtyp: 
+obsubtyplst: [24100,] 
+elemcntlst: [,]
+maxindx: 621
+hdrsize: 339
+lutsize: 128
+OBSTORE: IASI 
+HDRFILE: 
+longname: IASI
+satinstsnsr: metop1-iasi,metop3-iasi
+elemlist_:  
+brightnessTemperature:
+metdbsubtype: 
+SatID: 
