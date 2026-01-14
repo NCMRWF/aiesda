@@ -9,6 +9,19 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from pyiodaconv import ioda_conv_engines as iconv
 
+# 1. DYNAMIC TIME HANDLING (Mirroring bufr_to_obstore_mwri.sh logic)
+# In production, these come from ENV variables like $CYLC_TASK_CYCLE_TIME
+cycle_str = os.getenv('CYCLE_TIME', '2026-01-14T18:00:00Z')
+cycle_time = datetime.strptime(cycle_str, '%Y-%m-%dT%H:%M:%SZ')
+
+# Define the Window (matches the +/- 3h logic in AIESDA scripts)
+window_start = cycle_time - timedelta(hours=3)
+window_end = cycle_time + timedelta(hours=3)
+
+print(f"AIESDA Cycle: {cycle_time}")
+print(f"Window: {window_start} to {window_end}")
+
+
 # 1. Define your data (cloned/extracted from Monitobs scripts)
 lats = np.array([28.6, 19.1, 13.0], dtype='float32') # Delhi, Mumbai, Chennai
 lons = np.array([77.2, 72.8, 80.2], dtype='float32')
