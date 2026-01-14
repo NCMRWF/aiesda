@@ -1,0 +1,35 @@
+[scheduling]
+    cycling mode = integer
+    initial cycle point = 1
+    [[dependencies]]
+        [[[R1]]] # Initial Run
+            graph = setup => ingest => assimilate => verify => dashboard
+        [[[R/P1]]] # Recurring every cycle
+            graph = ingest => assimilate => verify => dashboard
+
+[runtime]
+    [[root]]
+        pre-script = "source ${AIESDA_HOME}/jobs/env_setup.sh"
+        [[[remote]]]
+            host = mihir.ncmrwf.gov.in
+    
+    [[setup]]
+        script = "mkdir -p ${SCRATCH_DIR}/${CYLC_TASK_CYCLE_POINT}"
+
+    [[ingest]]
+        script = "bash ${AIESDA_HOME}/jobs/aiesda_python_driver.sh ${CYLC_TASK_CYCLE_POINT}"
+
+    [[assimilate]]
+        # Runs the JEDI Variational Solver
+        script = "srun fv3jedi_variational.x ${AIESDA_HOME}/config/monsoon_config.yaml"
+        [[[job]]]
+            execution time limit = PT30M
+            [[[directives]]]
+                --nodes = 4
+                --ntasks-per-node = 24
+
+    [[verify]]
+        script = "python3 ${AIESDA_HOME}/scripts/anemoi_rollout.py"
+
+    [[dashboard]]
+        script = "python3 ${AIESDA_HOME}/scripts/dashboard.py"
