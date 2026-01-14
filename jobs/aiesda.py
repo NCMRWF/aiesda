@@ -25,7 +25,8 @@ writer = iconv.IodaWriter("aiesda_obs_sfc.nc", location_key_list)
 # 'ObsValue' = Measurements | 'ObsError' = Uncertainty | 'MetaData' = Spatial/ID info
 station_ids = np.array(['DEL01', 'BOM02', 'MAA03'], dtype=object)
 obs_errors = np.array([1.2, 1.5, 1.8], dtype='float32') # Kelvin
-
+# Example: Assign a 1.5K uncertainty to temperature measurements
+data[('air_temperature', 'ObsError')] = np.full_like(temp, 1.5)
 data = {
     ('air_temperature', 'ObsValue'): temp,
     ('air_temperature', 'ObsError'): obs_errors,
