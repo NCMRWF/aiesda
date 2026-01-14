@@ -1,0 +1,5 @@
+# In winter_config.yaml
+saber central block:
+  saber block name: BUMP_NICAS
+  read:
+    horizontal_length_scale: 400.0e3  # 400km

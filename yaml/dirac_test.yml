@@ -1,0 +1,20 @@
+# AIESDA Dirac YAML Snippet
+dirac:
+  ndirac: 1
+  lats: [28.6]
+  lons: [77.4]
+  levs: [1]
+  vars: [air_temperature]
+
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    read:
+      # This is what we are testing! 
+      # A 250km scale should create a smooth circle over North India.
+      horizontal_length_scale: 250.0e3 
+  saber outer blocks:
+  - saber block name: StdDev
+    read:
+      dataset: anemoi_error_stats.nc # Your AI error stats
