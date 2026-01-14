@@ -37,3 +37,12 @@ obs filters:
   threshold: 3.0   # Reject if |Obs - Anemoi| > 3.0 Kelvin
   action:
     name: reject
+
+- filter: Domain Check
+  where:
+  - variable: {name: MetaData/latitude}
+    min: 5.0
+    max: 38.0
+  - variable: {name: MetaData/longitude}
+    min: 65.0
+    max: 98.0
