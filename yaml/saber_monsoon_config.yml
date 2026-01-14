@@ -1,0 +1,6 @@
+# In monsoon_config.yaml
+saber central block:
+  saber block name: BUMP_NICAS
+  read:
+    horizontal_length_scale: 150.0e3  # 150km
+
