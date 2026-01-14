@@ -51,9 +51,11 @@ print("Successfully linked Anemoi Model Grid with JEDI Observation Space.")
 # Convert Anemoi Xarray/Zarr to NetCDF for JEDI
 # Ensure the variable names match the JEDI 'state variables' list
 # Select the analysis time (e.g., T+0 for the start of the DA window)
-ds_at_time = ds.sel(time="2026-01-14T18:00:00")
 # JEDI requires specific NetCDF naming; map Anemoi variables to JEDI names
 # Example: Rename '2t' to 'air_temperature' if needed
+# Part 6 Update: Ensure NetCDF variables match JEDI expectation
+# Rename Anemoi '2t' to JEDI 'air_temperature'
+ds_at_time = ds.sel(time="2026-01-14T18:00:00").rename({'2t': 'air_temperature'})
 ds_at_time.to_netcdf("ncmrwf_anemoi_bg.nc")
 
 #print("Background file ready for JEDI OOPS.")
