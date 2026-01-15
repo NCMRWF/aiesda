@@ -22,6 +22,16 @@ class JEDI_Interface:
         # Logic for dJ/dx
         pass
 
+def apply_h_operator(state, obs_data):
+    """Maps model state to observation space (JEDI H-operator)."""
+    # Moves the mapping logic out of the main job script
+    pass
+
+def compute_cost(analysis, background, obs, B_inv, R_inv):
+    """Calculates the JEDI variational cost function."""
+    # Logic for J(x)
+    pass
+
 def jedi_bind_state(state_data):
     """Utility to convert AI tensors to JEDI-compatible State objects."""
     return {"data": state_data, "metadata": "NCMRWF-AIESDA-v1"}

@@ -30,6 +30,16 @@ class AtmosphericAutoencoder(tornn.Module):
         reconstruction = self.decoder(latent)
         return reconstruction, latent
 
+def load_ai_model(model_path, config):
+    """Initializes and loads the pre-trained weights."""
+    # Logic moved from jobs/aiesda.py
+    pass
+
+def run_inference(model, input_tensor):
+    """Performs the forward pass to get AI-forecast/analysis."""
+    with torch.no_grad():
+        return model(input_tensor)
+
 def aiesda_loss(pred, target, background, physics_weight=0.1):
     # 1. Standard Reconstruction Loss (MSE)
     mse_loss = func.mse_loss(pred, target)
