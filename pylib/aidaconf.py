@@ -96,3 +96,22 @@ def run_cycle(conf):
     
     output_path = os.path.join(conf.OUTDIR, "analysis_sfc.nc")
     print(f"Analysis saved to {output_path}")
+
+def execute_task(conf):
+    """
+    Main entry point for Surface Assimilation.
+    Receives an AidaConfig object with all paths pre-calculated.
+    """
+    # Use paths directly from the AidaConfig object
+    obs_path = conf.OBSDIR
+    guess_path = conf.GESDIR
+    output_path = conf.OUTDIR
+    
+    print(f"--- Surface AI Assimilation ---")
+    print(f"Reading Observations from: {obs_path}")
+    print(f"Reading Background from: {guess_path}")
+    
+    # AI Model Logic here
+    # Example: model = load_model(conf.STATICDIR + '/sfc_weights.pth')
+    
+    print(f"Saving Analysis to: {output_path}")
