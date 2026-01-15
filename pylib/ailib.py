@@ -1,7 +1,13 @@
+
+import os
+import xarray as xr
+import numpy as np
 import torch
 import torch.nn as tornn
 import torch.nn.functional as func
 
+import anemoi.inference as anemoinfe # Local import for isolation
+import anemoi.datasets as anemoids # Local import for isolation
 
 class AtmosphericAutoencoder(tornn.Module):
     def __init__(self, input_channels=1, latent_dim=128):
@@ -71,3 +77,54 @@ def calculate_variational_cost(x_analysis, x_background, observations, obs_opera
     J_o = 0.5 * torch.matmul(torch.matmul(obs_diff.T, R_inv), obs_diff)
     
     return J_b + J_o
+
+
+def prepare_background_from_anemoi(zarr_path, target_time, output_nc):
+    """
+    Isolated Anemoi-to-JEDI bridge.
+    Encapsulates anemoi.datasets to provide a NetCDF background for JEDI.
+    """
+    
+    # 1. Open the Zarr dataset
+    ds = anemoids.open_dataset(zarr_path)
+    
+    # 2. Extract and Rename variables to JEDI conventions
+    # Mapping Anemoi names (e.g., '2t', '10u') to JEDI names
+    ds_at_time = ds.sel(time=target_time).rename({
+        '2t': 'air_temperature',
+        '10u': 'eastward_wind',
+        '10v': 'northward_wind'
+    })
+    
+    # 3. Export to NetCDF (JEDI standard)
+    ds_at_time.to_netcdf(output_nc)
+    return os.path.abspath(output_nc)
+
+def run_forecast_rollout(initial_state_nc, model_ckpt, lead_time=72):
+    """
+    Isolated Anemoi Inference.
+    Encapsulates anemoi.inference logic.
+    """
+    
+    # Load analysis state from DA
+    analysis_state = xarray.open_dataset(initial_state_nc)
+    
+    # Initialize and run the ML model
+    runner = anemoinfe.Runner(checkpoint=model_ckpt)
+    forecast = runner.run(
+        initial_state=analysis_state,
+        lead_time=lead_time,
+        frequency="6h"
+    )
+    return forecast
+
+def compute_error_stats(forecast_zarr, truth_zarr, output_nc):
+    """Calculate B-Matrix variance (StdDev) from historical AI errors."""
+    
+    fcs = anemoids.open_dataset(forecast_zarr)
+    truth = anemoids.open_dataset(truth_zarr)
+    
+    # Vectorized error calculation
+    std_dev = (fcs - truth).std(dim='time')
+    std_dev.to_netcdf(output_nc)
+    return output_nc
