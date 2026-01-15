@@ -115,3 +115,16 @@ def execute_task(conf):
     # Example: model = load_model(conf.STATICDIR + '/sfc_weights.pth')
     
     print(f"Saving Analysis to: {output_path}")
+
+class SurfaceAssimTask:
+    def __init__(self, conf: AidaConfig):
+        self.conf = conf
+        # Load AI models once during initialization
+        self.model_path = os.path.join(self.conf.STATICDIR, "sfc_model.pth")
+        
+    def run(self):
+        """The actual execution logic"""
+        print(f"Processing Surface Data for {self.conf.cdate}")
+        # Logic for reading conf.OBSDIR and conf.GESDIR goes here
+        # result = self.my_ai_model(obs, guess)
+        print(f"Saving output to {self.conf.OUTDIR}")
