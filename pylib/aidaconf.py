@@ -15,8 +15,8 @@ OBSNML=os.environ.get('OBSNML',PKGHOME+"/nml")
 sys.path.append(OBSNML)
 
 """
+aidaconf.py
 """
-# aidaconf.py
 
 import os
 import sys
@@ -28,6 +28,21 @@ ufo_engine = dalib.UFOInterface('yaml/ufo_setup.yml')
 ioda_engine = dalib.IODAInterface('yaml/ioda_setup.yml')
 saber_engine = dalib.SABERInterface('yaml/saber_setup.yml')
 oops_engine = dalib.OOPSInterface('yaml/oops_setup.yml')
+
+
+class DataManager:
+    def __init__(self, conf):
+        self.conf = conf
+
+    def get_obs_minus_bg(self, var_name):
+        """Logic to fetch and subtract background from observations"""
+        obs_path = os.path.join(self.conf.OBSDIR, f"{var_name}_obs.nc")
+        bg_path = os.path.join(self.conf.GESDIR, f"{var_name}_bg.nc")
+        
+        obs = xarray.open_dataset(obs_path)
+        bg = xarray.open_dataset(bg_path)
+        
+        return obs - bg
 
 class AidaConfig:
     """The central engine for paths and environment settings."""

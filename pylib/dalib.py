@@ -15,6 +15,7 @@ OBSNML=os.environ.get('OBSNML',PKGHOME+"/nml")
 sys.path.append(OBSNML)
 
 """
+dalib.py
 """
 import os
 import numpy
@@ -102,19 +103,18 @@ class SaberInterface:
         # Logic to wrap increments in FieldSet and apply SABER block
         return increments
 
-class DataManager:
-    def __init__(self, conf):
-        self.conf = conf
 
-    def get_obs_minus_bg(self, var_name):
-        """Logic to fetch and subtract background from observations"""
-        obs_path = os.path.join(self.conf.OBSDIR, f"{var_name}_obs.nc")
-        bg_path = os.path.join(self.conf.GESDIR, f"{var_name}_bg.nc")
+    def compute_error_stats(forecast_zarr, truth_zarr, output_nc):
+        """Calculate B-Matrix variance (StdDev) from historical AI errors."""
         
-        obs = xarray.open_dataset(obs_path)
-        bg = xarray.open_dataset(bg_path)
+        fcs = anemoids.open_dataset(forecast_zarr)
+        truth = anemoids.open_dataset(truth_zarr)
         
-        return obs - bg
+        # Vectorized error calculation
+        std_dev = (fcs - truth).std(dim='time')
+        std_dev.to_netcdf(output_nc)
+        return output_nc
+
 
 class SurfaceManager:
     """Handles QC and JEDI-formatting for surface observations."""

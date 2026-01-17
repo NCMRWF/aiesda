@@ -15,6 +15,7 @@ OBSNML=os.environ.get('OBSNML',PKGHOME+"/nml")
 sys.path.append(OBSNML)
 
 """
+ailib.py
 """
 import sys
 import os
@@ -75,10 +76,10 @@ class AnemoiInterface:
     def export_for_jedi(self, dataset, output_path, analysis_time, var_mapping=None):
         """Converts Anemoi Xarray/Zarr output to JEDI-compliant NetCDF."""
         if var_mapping is None:
-            var_mapping = aidadic.jedi_anemoi_var_mapping
+            var_mapping = {v: k for k, v in aidadic.jedi_anemoi_var_mapping.items()}
 
         ds_at_time = dataset.sel(time=analysis_time)
-        ds_jedi = ds_at_time.rename({k: v for v, k in var_mapping.items() if k in ds_at_time.variables})
+        ds_jedi = ds_at_time.rename({k: v for k, v in var_mapping.items() if k in ds_at_time.variables})
         ds_jedi.to_netcdf(output_path)
         return output_path
 
@@ -109,6 +110,50 @@ class AtmosphericAutoencoder(tornn.Module):
         reconstruction = self.decoder(latent)
         return reconstruction, latent
 
+    
+    def calculate_variational_cost(x_analysis, x_background, observations, obs_operator, B_inv, R_inv):
+        """
+        Standard Variational Cost Function:
+        J(x) = (x - xb)^T B^-1 (x - xb) + (y - H(x))^T R^-1 (y - H(x))
+        """
+        # Background term (Difference from first guess)
+        bg_diff = x_analysis - x_background
+        J_b = 0.5 * torch.matmul(torch.matmul(bg_diff.T, B_inv), bg_diff)
+    
+        # Observation term (Difference from actual satellite/station data)
+        # H(x) is the observation operator (often a neural network in aiesda)
+        h_x = obs_operator(x_analysis) 
+        obs_diff = observations - h_x
+        J_o = 0.5 * torch.matmul(torch.matmul(obs_diff.T, R_inv), obs_diff)
+        return J_b + J_o
+    
+    def aiesda_loss(pred, target, background, physics_weight=0.1, bg_weight=0.5):
+        """
+        AIESDA Custom Loss Function.
+    
+        Args:
+            pred (torch.Tensor): The AI model's output (analysis/forecast).
+            target (torch.Tensor): The 'Truth' or high-quality analysis.
+            background (torch.Tensor): The JEDI background (First Guess).
+            physics_weight (float): Weight for the Smoothness/TV penalty.
+            bg_weight (float): Weight for the Background constraint (DA-like regularization).
+        """
+        # 1. Standard Reconstruction Loss (MSE) - Accuracy against truth
+        mse_loss = func.mse_loss(pred, target)
+
+        # 2. Background Constraint (JEDI-Consistency)
+        # This prevents the AI from straying too far from the physical 'First Guess'
+        bg_constraint = func.mse_loss(pred, background)
+
+        # 3. Physics Constraint (Total Variation)
+        # Penalizes sharp, unphysical noise in the prediction
+        diff_i = torch.pow(pred[:, :, 1:, :] - pred[:, :, :-1, :], 2).sum()
+        diff_j = torch.pow(pred[:, :, :, 1:] - pred[:, :, :, :-1], 2).sum()
+        tv_loss = diff_i + diff_j
+
+        # Total Weighted Loss
+        return mse_loss + (bg_weight * bg_constraint) + (physics_weight * tv_loss)
+
 """
 Public functions
 """
@@ -136,37 +181,7 @@ def run_inference(model, input_tensor):
     with torch.no_grad():
         return model(input_tensor)
 
-def aiesda_loss(pred, target, background, physics_weight=0.1):
-    # 1. Standard Reconstruction Loss (MSE)
-    mse_loss = func.mse_loss(pred, target)
-    
-    # 2. Background Constraint (Prevents the AI from straying too far from the 'First Guess')
-    bg_constraint = func.mse_loss(pred, background)
-    
-    # 3. Physics Constraint (e.g., Smoothness/Total Variation)
-    # Penalizes sharp, unphysical noise in the prediction
-    diff_i = torch.pow(pred[:, :, 1:, :] - pred[:, :, :-1, :], 2).sum()
-    diff_j = torch.pow(pred[:, :, :, 1:] - pred[:, :, :, :-1], 2).sum()
-    tv_loss = diff_i + diff_j
-    
-    return mse_loss + bg_constraint + (physics_weight * tv_loss)
 
-def calculate_variational_cost(x_analysis, x_background, observations, obs_operator, B_inv, R_inv):
-    """
-    Standard Variational Cost Function:
-    J(x) = (x - xb)^T B^-1 (x - xb) + (y - H(x))^T R^-1 (y - H(x))
-    """
-    # Background term (Difference from first guess)
-    bg_diff = x_analysis - x_background
-    J_b = 0.5 * torch.matmul(torch.matmul(bg_diff.T, B_inv), bg_diff)
-    
-    # Observation term (Difference from actual satellite/station data)
-    # H(x) is the observation operator (often a neural network in aiesda)
-    h_x = obs_operator(x_analysis) 
-    obs_diff = observations - h_x
-    J_o = 0.5 * torch.matmul(torch.matmul(obs_diff.T, R_inv), obs_diff)
-    
-    return J_b + J_o
 
 
 def prepare_background_from_anemoi(zarr_path, target_time, output_nc):
@@ -208,13 +223,3 @@ def run_forecast_rollout(initial_state_nc, model_ckpt, lead_time=72):
     )
     return forecast
 
-def compute_error_stats(forecast_zarr, truth_zarr, output_nc):
-    """Calculate B-Matrix variance (StdDev) from historical AI errors."""
-    
-    fcs = anemoids.open_dataset(forecast_zarr)
-    truth = anemoids.open_dataset(truth_zarr)
-    
-    # Vectorized error calculation
-    std_dev = (fcs - truth).std(dim='time')
-    std_dev.to_netcdf(output_nc)
-    return output_nc
