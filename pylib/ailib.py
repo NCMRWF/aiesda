@@ -23,7 +23,7 @@ import xarray
 import numpy 
 import torch
 import torch.nn as tornn
-import torch.nn.functional as func
+import torch.nn.functional as tornnfunc
 import anemoi.inference as anemoinfe
 import anemoi.datasets as anemoids 
 import aidadic
@@ -32,11 +32,31 @@ import aidadic
 class AnemoiInterface:
     """Interface for Anemoi ML-NWP models within aiesda."""
 
-    def __init__(self, model_path, device=None):
+    def __init__(self, model_path, device=None, config=None):
+        """
+        Initializes and loads the pre-trained weights.
+        This incorporates the logic formerly in load_ai_model.
+        """
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        # Load the Anemoi checkpoint (contains weights and metadata)
+        self.config = config or {}
+
+        # Logic from load_ai_model: Initialize and load weights
+        print(f"Loading Anemoi model from {model_path} on {self.device}...")
         self.model = AnemoiPredictor.from_checkpoint(model_path).to(self.device)
         self.model.eval()
+
+    def run_inference(self, input_tensor):
+        """
+        Performs the forward pass to get AI-forecast/analysis.
+        Centrally handles torch.no_grad() and device management.
+        """
+        # Ensure input is on the correct device
+        if isinstance(input_tensor, torch.Tensor):
+            input_tensor = input_tensor.to(self.device)
+            
+        with torch.no_grad():
+            return self.model(input_tensor)
+
     def prepare_input(self, analysis_file, var_mapping=None):
         """
         Converts the JEDI/AIESDA analysis NetCDF into Anemoi input format.
@@ -72,6 +92,48 @@ class AnemoiInterface:
             # Anemoi handles the internal rollout logic
             forecast = self.model.predict(initial_state, steps=steps)
         return forecast
+
+    def rollout_forecast(self, analysis_nc, output_nc, lead_time_hours):
+        """
+        High-level Workflow Orchestrator.
+        Handles file I/O, variable renaming, and calls the engine.
+        """
+        # 1. Prepare (JEDI -> Anemoi naming)
+        input_data = self.prepare_input(analysis_nc)
+        
+        # 2. Execute (Calls the internal engine method)
+        forecast_ds = self.run_forecast_rollout(
+            initial_state_ds=input_data, 
+            lead_time=lead_time_hours
+        )
+        
+        # 3. Save
+        forecast_ds.to_netcdf(output_nc)
+        return output_nc
+
+    def run_forecast_rollout(self, initial_state_ds, lead_time=72, frequency="6h"):
+        """
+        Internal Inference Engine.
+        Directly wraps the anemoi.inference logic using the loaded runner.
+        """
+        print(f"Running Anemoi inference for {lead_time}h...")
+        forecast = self.runner.run(
+            initial_state=initial_state_ds,
+            lead_time=lead_time,
+            frequency=frequency
+        )
+        return forecast
+
+    def prepare_background_from_anemoi(self, zarr_path, target_time, output_nc):
+        """
+        Class-based background preparation. 
+        Reuses export_for_jedi to ensure consistent variable naming.
+        """
+        # 1. Open the Zarr dataset using Anemoi's dataset utility
+        ds = anemoids.open_dataset(zarr_path)
+        
+        # 2. Leverage the existing class function for transformation and export
+        return self.export_for_jedi(ds, output_nc, target_time)
 
     def export_for_jedi(self, dataset, output_path, analysis_time, var_mapping=None):
         """Converts Anemoi Xarray/Zarr output to JEDI-compliant NetCDF."""
@@ -137,13 +199,15 @@ class AtmosphericAutoencoder(tornn.Module):
             background (torch.Tensor): The JEDI background (First Guess).
             physics_weight (float): Weight for the Smoothness/TV penalty.
             bg_weight (float): Weight for the Background constraint (DA-like regularization).
+            By adding the bg_constraint (background error), the model learns 
+            to stay within the "physical manifold" defined by the JEDI First Guess.
         """
         # 1. Standard Reconstruction Loss (MSE) - Accuracy against truth
-        mse_loss = func.mse_loss(pred, target)
+        mse_loss = tornnfunc.mse_loss(pred, target)
 
         # 2. Background Constraint (JEDI-Consistency)
         # This prevents the AI from straying too far from the physical 'First Guess'
-        bg_constraint = func.mse_loss(pred, background)
+        bg_constraint = tornnfunc.mse_loss(pred, background)
 
         # 3. Physics Constraint (Total Variation)
         # Penalizes sharp, unphysical noise in the prediction
@@ -158,68 +222,10 @@ class AtmosphericAutoencoder(tornn.Module):
 Public functions
 """
 
-def rollout_forecast(model_checkpoint, analysis_nc, output_nc, lead_time_hours):
-    """High-level wrapper for the jobs/aiesda.py script."""
-    ai_engine = AnemoiInterface(model_checkpoint)
-    input_data = ai_engine.prepare_input(analysis_nc)
+def export_for_jedi(self, dataset, output_path, analysis_time, var_mapping=None):
+    """Legacy wrapper calling the class method."""
+    interface = AnemoiInterface()
+    return interface.export_for_jedi(self, dataset, output_path, analysis_time, var_mapping)
+
     
-    # Calculate steps based on model's dt (usually 6h)
-    steps = lead_time_hours // 6 
-    
-    forecast_ds = ai_engine.run_forecast(input_data, steps=steps)
-    forecast_ds.to_netcdf(output_nc)
-    return output_nc
-
-
-def load_ai_model(model_path, config):
-    """Initializes and loads the pre-trained weights."""
-    # Logic moved from jobs/aiesda.py
-    pass
-
-def run_inference(model, input_tensor):
-    """Performs the forward pass to get AI-forecast/analysis."""
-    with torch.no_grad():
-        return model(input_tensor)
-
-
-
-
-def prepare_background_from_anemoi(zarr_path, target_time, output_nc):
-    """
-    Isolated Anemoi-to-JEDI bridge.
-    Encapsulates anemoi.datasets to provide a NetCDF background for JEDI.
-    """
-    
-    # 1. Open the Zarr dataset
-    ds = anemoids.open_dataset(zarr_path)
-    
-    # 2. Extract and Rename variables to JEDI conventions
-    # Mapping Anemoi names (e.g., '2t', '10u') to JEDI names
-    ds_at_time = ds.sel(time=target_time).rename({
-        '2t': 'air_temperature',
-        '10u': 'eastward_wind',
-        '10v': 'northward_wind'
-    })
-    
-    # 3. Export to NetCDF (JEDI standard)
-    ds_at_time.to_netcdf(output_nc)
-    return os.path.abspath(output_nc)
-
-def run_forecast_rollout(initial_state_nc, model_ckpt, lead_time=72):
-    """
-    Isolated Anemoi Inference.
-    Encapsulates anemoi.inference logic.
-    """
-    
-    # Load analysis state from DA
-    analysis_state = xarray.open_dataset(initial_state_nc)
-    
-    # Initialize and run the ML model
-    runner = anemoinfe.Runner(checkpoint=model_ckpt)
-    forecast = runner.run(
-        initial_state=analysis_state,
-        lead_time=lead_time,
-        frequency="6h"
-    )
-    return forecast
 
