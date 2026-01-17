@@ -15,8 +15,8 @@ OBSNML=os.environ.get('OBSNML',PKGHOME+"/nml")
 sys.path.append(OBSNML)
 
 """
+aidaconf.py
 """
-# aidaconf.py
 
 import os
 import sys

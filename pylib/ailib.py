@@ -15,6 +15,7 @@ OBSNML=os.environ.get('OBSNML',PKGHOME+"/nml")
 sys.path.append(OBSNML)
 
 """
+ailib.py
 """
 import sys
 import os
