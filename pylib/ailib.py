@@ -76,10 +76,10 @@ class AnemoiInterface:
     def export_for_jedi(self, dataset, output_path, analysis_time, var_mapping=None):
         """Converts Anemoi Xarray/Zarr output to JEDI-compliant NetCDF."""
         if var_mapping is None:
-            var_mapping = aidadic.jedi_anemoi_var_mapping
+            var_mapping = {v: k for k, v in aidadic.jedi_anemoi_var_mapping.items()}
 
         ds_at_time = dataset.sel(time=analysis_time)
-        ds_jedi = ds_at_time.rename({k: v for v, k in var_mapping.items() if k in ds_at_time.variables})
+        ds_jedi = ds_at_time.rename({k: v for k, v in var_mapping.items() if k in ds_at_time.variables})
         ds_jedi.to_netcdf(output_path)
         return output_path
 
