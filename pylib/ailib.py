@@ -32,18 +32,19 @@ import aidadic
 class AnemoiInterface:
     """Interface for Anemoi ML-NWP models within aiesda."""
 
-    def __init__(self, model_path, device=None, config=None):
+    def __init__(self, model_path=None, device=None, config=None):
         """
         Initializes and loads the pre-trained weights.
         This incorporates the logic formerly in load_ai_model.
         """
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.config = config or {}
-
-        # Logic from load_ai_model: Initialize and load weights
-        print(f"Loading Anemoi model from {model_path} on {self.device}...")
-        self.model = AnemoiPredictor.from_checkpoint(model_path).to(self.device)
-        self.model.eval()
+        self.runner = None
+        # Initialize and load weights
+        if model_path:
+            print(f"Loading Anemoi model from {model_path} on {self.device}...")
+            self.model = self.runner.model.to(self.device)
+            self.model.eval()
 
     def run_inference(self, input_tensor):
         """
@@ -69,7 +70,7 @@ class AnemoiInterface:
         if var_mapping is None:
             var_mapping = aidadic.jedi_anemoi_var_mapping
 
-        ds = xr.open_dataset(analysis_file)
+        ds = xarray.open_dataset(analysis_file)
 
         # 1. Rename JEDI variables back to Anemoi/ECMWF short names
         mapping_to_use = {k: v for k, v in var_mapping.items() if k in ds.variables}
@@ -102,7 +103,7 @@ class AnemoiInterface:
         input_data = self.prepare_input(analysis_nc)
         
         # 2. Execute (Calls the internal engine method)
-        forecast_ds = self.run_forecast_rollout(
+        forecast_ds = self.run_forecast(
             initial_state_ds=input_data, 
             lead_time=lead_time_hours
         )
@@ -111,7 +112,7 @@ class AnemoiInterface:
         forecast_ds.to_netcdf(output_nc)
         return output_nc
 
-    def run_forecast_rollout(self, initial_state_ds, lead_time=72, frequency="6h"):
+    def run_forecast(self, initial_state_ds, lead_time=72, frequency="6h"):
         """
         Internal Inference Engine.
         Directly wraps the anemoi.inference logic using the loaded runner.
