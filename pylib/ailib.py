@@ -222,10 +222,23 @@ class AtmosphericAutoencoder(tornn.Module):
 Public functions
 """
 
-def export_for_jedi(self, dataset, output_path, analysis_time, var_mapping=None):
+
+def load_ai_model(model_path, config=None):
+    """class object initialisation"""
+    return AnemoiInterface(model_path, config=config)
+    
+def rollout_forecast(model_checkpoint, analysis_nc, output_nc, lead_time_hours):
+    """Legacy wrapper calling the class method."""
+    interface = AnemoiInterface(model_checkpoint)
+    return interface.rollout_forecast(analysis_nc, output_nc, lead_time_hours)
+
+def prepare_background_from_anemoi(zarr_path, target_time, output_nc):
     """Legacy wrapper calling the class method."""
     interface = AnemoiInterface()
-    return interface.export_for_jedi(self, dataset, output_path, analysis_time, var_mapping)
+    return interface.prepare_background_from_anemoi(zarr_path, target_time, output_nc)
 
-    
+def export_for_jedi(dataset, output_path, analysis_time, var_mapping=None):
+    """Legacy wrapper calling the class method."""
+    interface = AnemoiInterface()
+    return interface.export_for_jedi(dataset, output_path, analysis_time, var_mapping=var_mapping)
 
