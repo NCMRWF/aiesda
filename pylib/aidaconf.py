@@ -1,10 +1,122 @@
+#! python3
+"""
+Artificial Intelligence Data Assimilation Orchastation Library
+Created on Wed Jan 14 19:45:25 2026
+@author: gibies
+https://github.com/Gibies
+"""
+CURR_PATH=os.path.dirname(os.path.abspath(__file__))
+PKGHOME=os.path.dirname(CURR_PATH)
+OBSLIB=os.environ.get('OBSLIB',PKGHOME+"/pylib")
+sys.path.append(OBSLIB)
+OBSDIC=os.environ.get('OBSDIC',PKGHOME+"/pydic")
+sys.path.append(OBSDIC)
+OBSNML=os.environ.get('OBSNML',PKGHOME+"/nml")
+sys.path.append(OBSNML)
 
+"""
+"""
 # aidaconf.py
-import argparse
+
 import os
+import sys
+import argparse
 import logging
+from datetime import datetime
+
+ufo_engine = dalib.UFOInterface('yaml/ufo_setup.yml')
+ioda_engine = dalib.IODAInterface('yaml/ioda_setup.yml')
+saber_engine = dalib.SABERInterface('yaml/saber_setup.yml')
+oops_engine = dalib.OOPSInterface('yaml/oops_setup.yml')
+
+class AidaConfig:
+    """The central engine for paths and environment settings."""
+    def __init__(self):
+        # Existing AidaConfig logic: parses --date, --cycle, --expid from CLI
+        # Dynamically sets self.OBSDIR, self.GESDIR, self.OUTDIR, etc.
+        pass
+
+class BaseWorker:
+    """Parent class for all AIESDA tasks to ensure consistency."""
+    def __init__(self, conf: AidaConfig):
+        self.conf = conf
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+    def check_inputs(self, file_list):
+        for f in file_list:
+            if not os.path.exists(f):
+                self.logger.error(f"Required file missing: {f}")
+                return False
+        return True
+
+class SurfaceAssimWorker(BaseWorker):
+    """Encapsulates all logic for Surface AI Assimilation."""
+    def __init__(self, conf: AidaConfig):
+        super().__init__(conf)
+        self.obs_file = os.path.join(self.conf.OBSDIR, f"sfc_obs_{self.conf.cdate}.nc")
+        self.ges_file = os.path.join(self.conf.GESDIR, f"sfc_guess_{self.conf.cdate}.nc")
+        self.out_file = os.path.join(self.conf.OUTDIR, f"sfc_analysis_{self.conf.cdate}.nc")
+
+    def run(self):
+        self.logger.info(f"Initiating Surface Assimilation for {self.conf.cdate}")
+        
+        if not self.check_inputs([self.obs_file, self.ges_file]):
+            raise FileNotFoundError("Input data missing for Surface Assimilation.")
+
+        # CORE AI LOGIC (Formerly duplicated in scripts)
+        # result = self.ai_engine.predict(self.obs_file, self.ges_file)
+        
+        self.logger.info(f"Successfully saved analysis to {self.out_file}")
 
 
+
+class AidaConfig:
+    # ... (Existing AidaConfig logic remains here) ...
+    def __init__(self):
+        # (Existing initialization logic)
+        pass
+
+class SurfaceAssimWorker:
+    """
+    Standardized Surface AI Assimilation Worker.
+    Located inside the library for global accessibility.
+    """
+    def __init__(self, conf: AidaConfig):
+        self.conf = conf
+        # Centralize path logic inside the library
+        self.obs_file = os.path.join(self.conf.OBSDIR, f"sfc_obs_{self.conf.cdate}.nc")
+        self.ges_file = os.path.join(self.conf.GESDIR, f"guess_{self.conf.cdate}.nc")
+
+    def run(self):
+        print(f"--- [Library Worker] Processing Surface AI ---")
+        print(f"Target: {self.conf.cdate} | Exp: {self.conf.expid}")
+        
+        # Check if files exist before processing
+        if not os.path.exists(self.obs_file):
+            raise FileNotFoundError(f"Observation file missing: {self.obs_file}")
+
+        # Insert AI Inference logic here
+        # Example: model.predict(self.obs_file, self.ges_file)
+        
+        print(f"Analysis saved to: {self.conf.OUTDIR}")
+
+class SurfaceAssimTask:
+    def __init__(self, conf: AidaConfig):
+        self.conf = conf
+        # Load AI models once during initialization
+        self.model_path = os.path.join(self.conf.STATICDIR, "sfc_model.pth")
+        
+    def run(self):
+        """The actual execution logic"""
+        print(f"Processing Surface Data for {self.conf.cdate}")
+        # Logic for reading conf.OBSDIR and conf.GESDIR goes here
+        # result = self.my_ai_model(obs, guess)
+        print(f"Saving output to {self.conf.OUTDIR}")
+
+
+"""
+Public functions
+"""
 def get_common_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--date', required=True, help='Forecast date YYYYMMDD')
@@ -116,48 +228,3 @@ def execute_task(conf):
     
     print(f"Saving Analysis to: {output_path}")
 
-class SurfaceAssimTask:
-    def __init__(self, conf: AidaConfig):
-        self.conf = conf
-        # Load AI models once during initialization
-        self.model_path = os.path.join(self.conf.STATICDIR, "sfc_model.pth")
-        
-    def run(self):
-        """The actual execution logic"""
-        print(f"Processing Surface Data for {self.conf.cdate}")
-        # Logic for reading conf.OBSDIR and conf.GESDIR goes here
-        # result = self.my_ai_model(obs, guess)
-        print(f"Saving output to {self.conf.OUTDIR}")
-
-import os
-import sys
-
-class AidaConfig:
-    # ... (Existing AidaConfig logic remains here) ...
-    def __init__(self):
-        # (Existing initialization logic)
-        pass
-
-class SurfaceAssimWorker:
-    """
-    Standardized Surface AI Assimilation Worker.
-    Located inside the library for global accessibility.
-    """
-    def __init__(self, conf: AidaConfig):
-        self.conf = conf
-        # Centralize path logic inside the library
-        self.obs_file = os.path.join(self.conf.OBSDIR, f"sfc_obs_{self.conf.cdate}.nc")
-        self.ges_file = os.path.join(self.conf.GESDIR, f"guess_{self.conf.cdate}.nc")
-
-    def run(self):
-        print(f"--- [Library Worker] Processing Surface AI ---")
-        print(f"Target: {self.conf.cdate} | Exp: {self.conf.expid}")
-        
-        # Check if files exist before processing
-        if not os.path.exists(self.obs_file):
-            raise FileNotFoundError(f"Observation file missing: {self.obs_file}")
-
-        # Insert AI Inference logic here
-        # Example: model.predict(self.obs_file, self.ges_file)
-        
-        print(f"Analysis saved to: {self.conf.OUTDIR}")

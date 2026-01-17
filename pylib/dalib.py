@@ -1,8 +1,9 @@
 #! python3
 """
 Data Assimilation Interface Library
-Created on Wed Jan 14 19:32:07 2026
+Created on Wed Jan 14 19:41:36 2026
 @author: gibies
+https://github.com/Gibies
 """
 CURR_PATH=os.path.dirname(os.path.abspath(__file__))
 PKGHOME=os.path.dirname(CURR_PATH)
