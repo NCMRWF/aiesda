@@ -20,6 +20,7 @@ sys.path.append(OBSNML)
 dalib.py
 """
 import numpy
+import pandas
 import xarray
 import ufo
 import oops
@@ -264,6 +265,33 @@ class StabilityChecker:
         
         theta = dataset[t_name] * (p0 / dataset[p_name])**kappa
         return theta
+
+
+class RadianceBiasManager:
+    """Handles Variational Bias Correction (VarBC) for satellite sensors."""
+
+    def __init__(self, conf):
+        self.conf = conf
+        self.bias_dir = os.path.join(self.conf.STATICDIR, "varbc")
+        self.predictors = ['constant', 'scan_angle', 'lapse_rate', 'clw']
+
+    def load_coefficients(self, sensor_id):
+        """Loads beta coefficients using full pandas name."""
+        coeff_file = os.path.join(self.bias_dir, f"{sensor_id}_coeffs.csv")
+        if os.path.exists(coeff_file):
+            return pandas.read_csv(coeff_file).set_index('channel')
+        else:
+            return None
+
+    def calculate_bias(self, sensor_id, channel_list, predictor_values):
+        """Computes bias using full numpy name."""
+        coeffs = self.load_coefficients(sensor_id)
+        if coeffs is None:
+            return numpy.zeros_like(predictor_values['constant'])
+
+        # Logic to apply coefficients to predictors...
+        pass
+
 
 
 """
