@@ -103,7 +103,7 @@ class AnemoiInterface:
         input_data = self.prepare_input(analysis_nc)
         
         # 2. Execute (Calls the internal engine method)
-        forecast_ds = self.run_forecast(
+        forecast_ds = self.execute_anemoi_runner(
             initial_state_ds=input_data, 
             lead_time=lead_time_hours
         )
@@ -112,7 +112,7 @@ class AnemoiInterface:
         forecast_ds.to_netcdf(output_nc)
         return output_nc
 
-    def run_forecast(self, initial_state_ds, lead_time=72, frequency="6h"):
+    def execute_anemoi_runner(self, initial_state_ds, lead_time=72, frequency="6h"):
         """
         Internal Inference Engine.
         Directly wraps the anemoi.inference logic using the loaded runner.

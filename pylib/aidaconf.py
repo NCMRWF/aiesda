@@ -5,6 +5,8 @@ Created on Wed Jan 14 19:45:25 2026
 @author: gibies
 https://github.com/Gibies
 """
+import os
+import sys
 CURR_PATH=os.path.dirname(os.path.abspath(__file__))
 PKGHOME=os.path.dirname(CURR_PATH)
 OBSLIB=os.environ.get('OBSLIB',PKGHOME+"/pylib")
@@ -18,103 +20,33 @@ sys.path.append(OBSNML)
 aidaconf.py
 """
 
-import os
-import sys
 import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
+import ailib
+import dalib
+import yaml
 
-ufo_engine = dalib.UFOInterface('yaml/ufo_setup.yml')
-ioda_engine = dalib.IODAInterface('yaml/ioda_setup.yml')
-saber_engine = dalib.SABERInterface('yaml/saber_setup.yml')
-oops_engine = dalib.OOPSInterface('yaml/oops_setup.yml')
-
-
-class DataManager:
-    def __init__(self, conf):
-        self.conf = conf
-
-    def run_production_cycle(config_path):
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-
-        # --- THE MIGRATION POINT ---
-        # OLD: No initialization here.
-        # NEW: Load model ONCE. Weights stay in GPU memory.
-        ai_engine = ailib.AnemoiInterface(model_path=config["model_ckpt"])
-
-        start_date = datetime.strptime(config["start_date"], "%Y%m%d%H")
-    
-        for cycle in range(config["total_cycles"]):
-            current_time = start_date + timedelta(hours=cycle * 6)
-            print(f"\n--- Starting Cycle: {current_time} ---")
-
-            # 1. Prepare Background (JEDI First Guess)
-            # Uses internal class logic to extract from Zarr
-            bg_file = ai_engine.prepare_background_from_anemoi(
-                zarr_path=config["history_zarr"],
-                target_time=current_time.isoformat(),
-                output_nc=f"bg_{cycle}.nc"
-            )
-
-            # ... [External Call to JEDI for Analysis] ...
-            analysis_nc = f"analysis_{cycle}.nc"
-
-            # 2. Run Forecast Rollout
-            # OLD: ailib.rollout_forecast(ckpt, analysis, ...) -> Re-loads model
-            # NEW: ai_engine.rollout_forecast(...) -> Uses existing model in VRAM
-            ai_engine.rollout_forecast(
-                analysis_nc=analysis_nc,
-                output_nc=f"forecast_out_{cycle}.nc",
-                lead_time_hours=6
-            )
-
-    def get_obs_minus_bg(self, var_name):
-        """Logic to fetch and subtract background from observations"""
-        obs_path = os.path.join(self.conf.OBSDIR, f"{var_name}_obs.nc")
-        bg_path = os.path.join(self.conf.GESDIR, f"{var_name}_bg.nc")
-        
-        obs = xarray.open_dataset(obs_path)
-        bg = xarray.open_dataset(bg_path)
-        
-        return obs - bg
 
 class AidaConfig:
-    """The central engine for paths and environment settings."""
-    def __init__(self):
-        # Existing AidaConfig logic: parses --date, --cycle, --expid from CLI
-        # Dynamically sets self.OBSDIR, self.GESDIR, self.OUTDIR, etc.
-        pass
-
-    def test_export_logic():
-       # 1. Create a mock multi-day rollout dataset (4 days, 6h steps)
-       times = pd.date_range("2026-01-01", periods=16, freq="6h")
-       lats, lons = np.linspace(-90, 90, 10), np.linspace(0, 360, 20)
-
-       data = xr.Dataset(
-           {"2t": (("time", "lat", "lon"), np.random.rand(16, 10, 20))},
-           coords={"time": times, "lat": lats, "lon": lons}
-       )
-
-       interface = AnemoiInterface() # No model needed for naming/slicing test
-       target_time = "2026-01-02T12:00:00"
-       output_file = "test_jedi_slice.nc"
-
-       # 2. Run export
-       interface.export_for_jedi(data, output_file, target_time)
-
-       # 3. Validation
-       exported = xr.open_dataset(output_file)
-
-       # Check variable renaming (2t -> air_temperature)
-       assert "air_temperature" in exported.data_vars, "Renaming failed!"
-       # Check time slice accuracy
-       assert str(exported.time.values).startswith("2026-01-02T12"), "Wrong time slice selected!"
-
-       print("✅ Time-slice and Variable Mapping Test Passed!")
+    """Single Source of Truth for all paths and cycle settings."""
+    def __init__(self, args):
+        self.cdate = args.date
+        self.cycle = args.cycle
+        self.expid = args.expid
+        self.home = os.environ.get('AIESDA_HOME', os.getcwd())
+        
+        # Centralized Directory Tree
+        self.WORK_DIR = f"{self.home}/work/{self.expid}/{self.cdate}/{self.cycle}"
+        self.OBSDIR = f"{self.WORK_DIR}/obs"
+        self.GESDIR = f"{self.WORK_DIR}/guess"
+        self.OUTDIR = f"{self.WORK_DIR}/analysis"
+        self.STATICDIR = f"{self.home}/static"
+        
+        os.makedirs(self.OUTDIR, exist_ok=True)
 
 class BaseWorker:
-    """Parent class for all AIESDA tasks to ensure consistency."""
+    """Handles shared logging and file checking for all tasks."""
     def __init__(self, conf: AidaConfig):
         self.conf = conf
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -122,78 +54,44 @@ class BaseWorker:
     def check_inputs(self, file_list):
         for f in file_list:
             if not os.path.exists(f):
-                self.logger.error(f"Required file missing: {f}")
+                self.logger.error(f"Missing: {f}")
                 return False
         return True
 
 class SurfaceAssimWorker(BaseWorker):
-    """Encapsulates all logic for Surface AI Assimilation."""
-    def __init__(self, conf: AidaConfig):
+    """Refactored Worker: Uses a persistent AI engine."""
+    def __init__(self, conf: AidaConfig, ai_engine: ailib.AnemoiInterface):
         super().__init__(conf)
-        self.obs_file = os.path.join(self.conf.OBSDIR, f"sfc_obs_{self.conf.cdate}.nc")
-        self.ges_file = os.path.join(self.conf.GESDIR, f"sfc_guess_{self.conf.cdate}.nc")
-        self.out_file = os.path.join(self.conf.OUTDIR, f"sfc_analysis_{self.conf.cdate}.nc")
-
+        self.ai_engine = ai_engine  # Injected from main loop
+        
     def run(self):
-        self.logger.info(f"Initiating Surface Assimilation for {self.conf.cdate}")
-        
-        if not self.check_inputs([self.obs_file, self.ges_file]):
-            raise FileNotFoundError("Input data missing for Surface Assimilation.")
-
-        # CORE AI LOGIC (Formerly duplicated in scripts)
-        # result = self.ai_engine.predict(self.obs_file, self.ges_file)
-        
-        self.logger.info(f"Successfully saved analysis to {self.out_file}")
-
-
-
-class AidaConfig:
-    # ... (Existing AidaConfig logic remains here) ...
-    def __init__(self):
-        # (Existing initialization logic)
+        self.logger.info(f"Processing Surface for {self.conf.cdate}")
+        # Logic for JEDI interactions via dalib or loss functions via ailib
+        # Example: Using the custom loss for training/analysis
+        # cost = ailib.aiesda_loss(pred, target, background)
         pass
 
-class SurfaceAssimWorker:
-    """
-    Standardized Surface AI Assimilation Worker.
-    Located inside the library for global accessibility.
-    """
-    def __init__(self, conf: AidaConfig):
-        self.conf = conf
-        # Centralize path logic inside the library
-        self.obs_file = os.path.join(self.conf.OBSDIR, f"sfc_obs_{self.conf.cdate}.nc")
-        self.ges_file = os.path.join(self.conf.GESDIR, f"guess_{self.conf.cdate}.nc")
-
-    def run(self):
-        print(f"--- [Library Worker] Processing Surface AI ---")
-        print(f"Target: {self.conf.cdate} | Exp: {self.conf.expid}")
+class Orchestrator:
+    """Manages the full multi-cycle production run."""
+    def __init__(self, config_path):
+        with open(config_path, "r") as f:
+            self.full_config = yaml.safe_load(f)
         
-        # Check if files exist before processing
-        if not os.path.exists(self.obs_file):
-            raise FileNotFoundError(f"Observation file missing: {self.obs_file}")
+        # CRITICAL: Init AI Engine ONCE for the whole experiment
+        self.ai_engine = ailib.AnemoiInterface(
+            model_path=self.full_config.get("model_ckpt")
+        )
 
-        # Insert AI Inference logic here
-        # Example: model.predict(self.obs_file, self.ges_file)
-        
-        print(f"Analysis saved to: {self.conf.OUTDIR}")
-
-class SurfaceAssimTask:
-    def __init__(self, conf: AidaConfig):
-        self.conf = conf
-        # Load AI models once during initialization
-        self.model_path = os.path.join(self.conf.STATICDIR, "sfc_model.pth")
-        
-    def run(self):
-        """The actual execution logic"""
-        print(f"Processing Surface Data for {self.conf.cdate}")
-        # Logic for reading conf.OBSDIR and conf.GESDIR goes here
-        # result = self.my_ai_model(obs, guess)
-        print(f"Saving output to {self.conf.OUTDIR}")
+    def start_production(self):
+        """High-level loop over cycles."""
+        # Loop logic for multi-day windows using self.ai_engine
+        pass
 
 
 """
 Public functions
 """
+
 def get_common_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--date', required=True, help='Forecast date YYYYMMDD')
