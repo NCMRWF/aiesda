@@ -1,9 +1,32 @@
+#! python3
+"""
+Artificial Intelligence Data Assimilation Science Library
+Created on Wed Jan 14 19:56:48 2026
+@author: gibies
+https://github.com/Gibies
+"""
+import os
+import sys
+CURR_PATH=os.path.dirname(os.path.abspath(__file__))
+PKGHOME=os.path.dirname(CURR_PATH)
+OBSLIB=os.environ.get('OBSLIB',PKGHOME+"/pylib")
+sys.path.append(OBSLIB)
+OBSDIC=os.environ.get('OBSDIC',PKGHOME+"/pydic")
+sys.path.append(OBSDIC)
+OBSNML=os.environ.get('OBSNML',PKGHOME+"/nml")
+sys.path.append(OBSNML)
+
+"""
+scilib.py
+"""
 
 
 import os
+import numpy as np
+import pandas as pd
 import xarray as xr
 import matplotlib.pyplot as plt
-import numpy as np
+from datetime import datetime, timedelta
 from aidaconf import AidaConfig
 import aidadic
 
@@ -132,5 +155,45 @@ class AssimilationValidator:
         plt.savefig(save_path)
         plt.close()
         return save_path
+
+
+class AidaReportCard:
+    """Batch processing class to evaluate experiment performance over time."""
+    
+    def __init__(self, expid, root_dir):
+        self.expid = expid
+        self.root_dir = root_dir
+        self.metrics_db = []
+
+    def collect_cycle_metrics(self, date, cycle, stats_dict):
+        """Logs metrics for a specific cycle into a central database."""
+        stats_dict.update({'date': date, 'cycle': cycle})
+        self.metrics_db.append(stats_dict)
+
+    def generate_summary_report(self, output_dir):
+        """Creates a performance report with time-series of RMSE and Bias."""
+        df = pd.DataFrame(self.metrics_db)
+        df['timestamp'] = pd.to_datetime(df['date'] + df['cycle'], format='%Y%m%d%H')
+        df = df.sort_values('timestamp')
+
+        # Create Time-Series Plots
+        fig, ax = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
+        
+        ax[0].plot(df['timestamp'], df['rmse_increment'], marker='o', color='tab:red')
+        ax[0].set_title(f"Experiment {self.expid}: Root Mean Square Increment (RMSI)")
+        ax[0].set_ylabel("RMSE")
+
+        ax[1].plot(df['timestamp'], df['mean_increment'], marker='s', color='tab:blue')
+        ax[1].set_title("Mean Increment (Bias)")
+        ax[1].set_ylabel("Bias")
+        ax[1].axhline(0, color='black', linestyle='--')
+
+        report_path = os.path.join(output_dir, f"{self.expid}_summary_report.png")
+        plt.tight_layout()
+        plt.savefig(report_path)
+        
+        # Save CSV for further analysis in Excel/Pandas
+        df.to_csv(os.path.join(output_dir, f"{self.expid}_metrics.csv"), index=False)
+        return report_path
 
 
