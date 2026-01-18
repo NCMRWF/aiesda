@@ -25,6 +25,7 @@ import logging
 from aidaconf import AidaConfig, SurfaceAssimWorker, Orchestrator
 from ailib import AnemoiInterface
 from dalib import UFOInterface
+from metlib import AssimilationValidator
 
 def main():
     # 1. Parse Arguments (Centralized via aidaconf)
@@ -63,6 +64,18 @@ def main():
     except Exception as e:
         logger.error(f"Surface Worker Failed: {e}")
         sys.exit(1)
+
+    # 5.5 TASK: Validation and Diagnostics
+    validator = AssimilationValidator(conf)
+    inc_ds = validator.calculate_increment(analysis_file, bg_file)
+    stats = validator.compute_stats(inc_ds)
+
+    print(f"Mean Increment (Bias Check): {stats['mean_increment']}")
+
+    # Generate plots for critical variables
+    for var in ['air_temperature', 'eastward_wind']:
+        path = validator.plot_diagnostic_maps(var, analysis_file, bg_file)
+        print(f"Diagnostic plot saved to: {path}")
 
     # 6. TASK C: Forecast Rollout
     # Use the Analysis from JEDI/Worker to start the next forecast
