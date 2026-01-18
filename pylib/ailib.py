@@ -100,35 +100,19 @@ class AnemoiInterface:
         return forecast
 
     def rollout_forecast(self, analysis_nc, output_nc, lead_time_hours):
-        """
-        High-level Workflow Orchestrator.
-        Handles file I/O, variable renaming, and calls the engine.
-        """
-        # 1. Prepare (JEDI -> Anemoi naming)
+        """Unified Rollout Orchestrator."""
+        # Preparation
         input_data = self.prepare_input(analysis_nc)
-        
-        # 2. Execute (Calls the internal engine method)
-        forecast_ds = self.execute_anemoi_runner(
-            initial_state_ds=input_data, 
+
+        # Inference using the internal runner
+        print(f"Executing {lead_time_hours}h rollout...")
+        forecast_ds = self.runner.run(
+            initial_state=input_data,
             lead_time=lead_time_hours
         )
-        
-        # 3. Save
+
         forecast_ds.to_netcdf(output_nc)
         return output_nc
-
-    def execute_anemoi_runner(self, initial_state_ds, lead_time=72, frequency="6h"):
-        """
-        Internal Inference Engine.
-        Directly wraps the anemoi.inference logic using the loaded runner.
-        """
-        print(f"Running Anemoi inference for {lead_time}h...")
-        forecast = self.runner.run(
-            initial_state=initial_state_ds,
-            lead_time=lead_time,
-            frequency=frequency
-        )
-        return forecast
 
     def prepare_background_from_anemoi(self, zarr_path, target_time, output_nc):
         """
