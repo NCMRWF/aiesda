@@ -104,5 +104,16 @@ def main():
     logger.info(f"Sensitivity map generated at {sens_plot}")
 
 
+    # Current Cycle files
+    current_an = conf.OUTDIR + "/analysis.nc"
+    # Path to the forecast generated 6 hours ago
+    prev_fc = f"{conf.home}/work/{conf.expid}/{prev_date}/{prev_cycle}/analysis/forecast_6h.nc"
+
+    if os.path.exists(prev_fc):
+        jump_ds, alerts = validator.check_temporal_consistency(current_an, prev_fc)
+        for msg in alerts:
+            logger.warning(msg)
+        validator.plot_temporal_tendency(jump_ds, 'air_temperature')
+
 if __name__ == "__main__":
     main()
