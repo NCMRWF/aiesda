@@ -225,8 +225,11 @@ class GraphCastInterface:
         
         if 'level' in standardized_ds.coords:
             standardized_ds = standardized_ds.rename({'level': 'lev'})
-            
+        
+        # ADD THIS: Ensures the 37 levels match aidadic exactly
+        standardized_ds['lev'] = self.standard_levels
         return standardized_ds
+
 
 class FourCastNetInterface:
     """
@@ -326,20 +329,20 @@ class PrithviInterface:
         mapping = {v: k for k, v in aidadic.prithvi_jedi_var_mapping.items()}
         standardized_ds = raw_output.rename(mapping)
 
-        # Standardize coordinate names
-        if 'pressure' in standardized_ds.coords:
-            standardized_ds = standardized_ds.rename({'pressure': 'lev'})
-        elif 'level' in standardized_ds.coords:
-            standardized_ds = standardized_ds.rename({'level': 'lev'})
+        # Coordinate Standardization
+        for coord_name in ['pressure', 'level', 'layers']:
+            if coord_name in standardized_ds.coords:
+                standardized_ds = standardized_ds.rename({coord_name: 'lev'})
 
-        # Assign centralized levels to avoid precision issues
-        # Prithvi outputs might contain a subset, so we ensure alignment
+        # Physical Unit Conversion for Prithvi (MERRA-2)
+        # Convert Geopotential Height (H) to Geopotential (Z) if needed by JEDI
+        if 'geopotential_height' in standardized_ds:
+            standardized_ds['geopotential'] = standardized_ds['geopotential_height'] * 9.80665
+
         if len(standardized_ds.lev) == len(self.levels):
             standardized_ds['lev'] = self.levels
             
         return standardized_ds
-
-
 
 
 
