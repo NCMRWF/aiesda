@@ -34,6 +34,41 @@ class DataManager:
     def __init__(self, conf):
         self.conf = conf
 
+    def run_production_cycle(config_path):
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+
+        # --- THE MIGRATION POINT ---
+        # OLD: No initialization here.
+        # NEW: Load model ONCE. Weights stay in GPU memory.
+        ai_engine = ailib.AnemoiInterface(model_path=config["model_ckpt"])
+
+        start_date = datetime.strptime(config["start_date"], "%Y%m%d%H")
+    
+        for cycle in range(config["total_cycles"]):
+            current_time = start_date + timedelta(hours=cycle * 6)
+            print(f"\n--- Starting Cycle: {current_time} ---")
+
+            # 1. Prepare Background (JEDI First Guess)
+            # Uses internal class logic to extract from Zarr
+            bg_file = ai_engine.prepare_background_from_anemoi(
+                zarr_path=config["history_zarr"],
+                target_time=current_time.isoformat(),
+                output_nc=f"bg_{cycle}.nc"
+            )
+
+            # ... [External Call to JEDI for Analysis] ...
+            analysis_nc = f"analysis_{cycle}.nc"
+
+            # 2. Run Forecast Rollout
+            # OLD: ailib.rollout_forecast(ckpt, analysis, ...) -> Re-loads model
+            # NEW: ai_engine.rollout_forecast(...) -> Uses existing model in VRAM
+            ai_engine.rollout_forecast(
+                analysis_nc=analysis_nc,
+                output_nc=f"forecast_out_{cycle}.nc",
+                lead_time_hours=6
+            )
+
     def get_obs_minus_bg(self, var_name):
         """Logic to fetch and subtract background from observations"""
         obs_path = os.path.join(self.conf.OBSDIR, f"{var_name}_obs.nc")
@@ -50,6 +85,33 @@ class AidaConfig:
         # Existing AidaConfig logic: parses --date, --cycle, --expid from CLI
         # Dynamically sets self.OBSDIR, self.GESDIR, self.OUTDIR, etc.
         pass
+
+    def test_export_logic():
+       # 1. Create a mock multi-day rollout dataset (4 days, 6h steps)
+       times = pd.date_range("2026-01-01", periods=16, freq="6h")
+       lats, lons = np.linspace(-90, 90, 10), np.linspace(0, 360, 20)
+
+       data = xr.Dataset(
+           {"2t": (("time", "lat", "lon"), np.random.rand(16, 10, 20))},
+           coords={"time": times, "lat": lats, "lon": lons}
+       )
+
+       interface = AnemoiInterface() # No model needed for naming/slicing test
+       target_time = "2026-01-02T12:00:00"
+       output_file = "test_jedi_slice.nc"
+
+       # 2. Run export
+       interface.export_for_jedi(data, output_file, target_time)
+
+       # 3. Validation
+       exported = xr.open_dataset(output_file)
+
+       # Check variable renaming (2t -> air_temperature)
+       assert "air_temperature" in exported.data_vars, "Renaming failed!"
+       # Check time slice accuracy
+       assert str(exported.time.values).startswith("2026-01-02T12"), "Wrong time slice selected!"
+
+       print("✅ Time-slice and Variable Mapping Test Passed!")
 
 class BaseWorker:
     """Parent class for all AIESDA tasks to ensure consistency."""
