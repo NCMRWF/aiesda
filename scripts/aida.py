@@ -90,5 +90,19 @@ def main():
 
     logger.info("--- Cycle Complete ---")
 
+
+    # 7. SENSITIVITY ANALYSIS (Optional Diagnostic)
+    logger.info("Running sensitivity analysis for Temperature...")
+    sens_ds = validator.run_sensitivity_test(
+        ai_engine=ai_engine, 
+        base_analysis_file=analysis_file, 
+        var_name='air_temperature'
+    )
+
+    # Plot where the model 'feels' the data most
+    sens_plot = validator.plot_sensitivity(sens_ds, 'air_temperature')
+    logger.info(f"Sensitivity map generated at {sens_plot}")
+
+
 if __name__ == "__main__":
     main()
