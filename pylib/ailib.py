@@ -5,6 +5,8 @@ Created on Wed Jan 14 19:32:07 2026
 @author: gibies
 https://github.com/Gibies
 """
+import sys
+import os
 CURR_PATH=os.path.dirname(os.path.abspath(__file__))
 PKGHOME=os.path.dirname(CURR_PATH)
 OBSLIB=os.environ.get('OBSLIB',PKGHOME+"/pylib")
@@ -17,8 +19,6 @@ sys.path.append(OBSNML)
 """
 ailib.py
 """
-import sys
-import os
 import xarray 
 import numpy 
 import torch
