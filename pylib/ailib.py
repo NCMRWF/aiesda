@@ -42,9 +42,15 @@ class AnemoiInterface:
         self.runner = None
         # Initialize and load weights
         if model_path:
-            print(f"Loading Anemoi model from {model_path} on {self.device}...")
+            print(f"Loading Anemoi model from {model_path}...")
+            # FIX: Initialize the runner first
+            self.runner = anemoinfe.Runner(checkpoint=model_path)
+            # FIX: Extract model from the runner
             self.model = self.runner.model.to(self.device)
             self.model.eval()
+        else:
+            self.runner = None
+            self.model = None
 
     def run_inference(self, input_tensor):
         """
@@ -65,7 +71,6 @@ class AnemoiInterface:
         Args:
             analysis_file (str): Path to the NetCDF file output by JEDI.
             var_mapping (dict): JEDI to Anemoi mapping. 
-                                Default: {'air_temperature': '2t', 'eastward_wind': 'u10'}
         """
         if var_mapping is None:
             var_mapping = aidadic.jedi_anemoi_var_mapping
