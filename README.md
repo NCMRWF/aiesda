@@ -46,7 +46,7 @@ pip install -r requirements.txt
 
 
 
-🚦 ***Quick Start***
+## 🚦 ***Quick Start***
 Python
 
 import xarray
@@ -64,7 +64,7 @@ standard_ds = interface.prepare_state(ds)
 ---
 
 
-#### Adding a New Model to the Registry
+## 🛠 Adding a New Model to the Registry
 To register a new model, update the `MODEL_REGISTRY` in `aidadic.py`:
 ```python
 "new_model_name": {
