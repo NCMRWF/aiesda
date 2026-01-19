@@ -44,12 +44,12 @@ The **Model Passport** replaces fragile "if-else" logic with a rigorous verifica
 ```bash
 git clone [https://github.com/NCMRWF/aiesda.git](https://github.com/NCMRWF/aiesda.git)
 cd aiesda
-pip install -r requirements.txt
+pip install -r requirements.txt```
 
 
 
 ## 🚦 ***Quick Start***
-Python
+```Python
 
 import xarray
 from aidaconf import ModelPassport
@@ -64,7 +64,7 @@ interface = ModelPassport.identify(ds)
 standard_ds = interface.prepare_state(ds)
 
 ---
-
+```
 
 ## 🛠 Adding a New Model to the Registry
 To register a new model, update the `MODEL_REGISTRY` in `aidadic.py`:
@@ -77,3 +77,4 @@ To register a new model, update the `MODEL_REGISTRY` in `aidadic.py`:
     "allow_nans": False,
     "mapping": {"air_temperature": "t", ...}
 }
+```
