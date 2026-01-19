@@ -23,10 +23,12 @@ aidaconf.py
 import argparse
 import logging
 import xarray
+import numpy 
 from datetime import datetime, timedelta
 import ailib
 import dalib
 import yaml
+import dynlib
 import aidadic
 
 class AidaConfig:
@@ -46,9 +48,6 @@ class AidaConfig:
         # Automatic directory creation
         for path in [self.OBSDIR, self.GESDIR, self.OUTDIR]:
             os.makedirs(path, exist_ok=True)
-
-# DELETE: setup_environment(args)
-# DELETE: config_env(args)
 
 class BaseWorker:
     """Handles shared logging and file checking for all tasks."""
@@ -86,17 +85,106 @@ class Orchestrator:
         self.ai_engine = ailib.AnemoiInterface(
             model_path=self.full_config.get("model_ckpt")
         )
+        # Initialize the JEDI bridge
+        self.bridge = JEDIModelBridge(config=self.full_config)
 
     def start_production(self):
         """High-level loop over cycles."""
-        # Loop logic for multi-day windows using self.ai_engine
+        """Loop logic for multi-day windows using self.ai_engine """
+        """Loop through dates and bridge them to JEDI."""
+        # 1. Get standardized background from AI model
+        # background = self.bridge.prepare_jedi_background("raw_ai_output.nc")
+        
+        # 2. Pass background to JEDI UFO operator (via dalib)
+        # h_x = dalib.UFOInterface(...).simulate(background)
         pass
 
+
+class ModelPassport:
+    """
+    Strict Multi-Factor Authenticator for NWP and AI Models.
+    Identifies and verifies datasets based on aidadic.MODEL_REGISTRY using explicit naming.
+    """
+    
+    @staticmethod
+    def identify(dataset: xarray.Dataset, config=None):
+        """
+        Main entry point: Identifies the model identity and validates all factors.
+        Returns an initialized Interface class instance if verification passes.
+        """
+        # 1. Identity Search (Attributes & Biometric Grid)
+        model_key = ModelPassport._find_registry_key(dataset)
+        
+        if not model_key:
+            logging.error("Passport Denied: Dataset identity could not be verified against Registry.")
+            raise PermissionError("ModelPassport: No matching model credentials found.")
+
+        # 2. Strict Multi-Factor Checklist (Resolution, Variables, Integrity)
+        ModelPassport.verify_factors(dataset, model_key)
+        
+        # 3. Secure Routing to Interface
+        logging.info(f"Passport Verified: Access granted for {model_key.upper()}.")
+        interface_path = aidadic.MODEL_REGISTRY[model_key]["interface_class"]
+        
+        return ModelPassport._get_interface_instance(interface_path, config)
+
+    @staticmethod
+    def _find_registry_key(dataset):
+        """Tier 1 & 2: Identifies the model key using metadata and vertical fingerprints."""
+        attribute_string = str(dataset.attrs).lower()
+        
+        for key, specs in aidadic.MODEL_REGISTRY.items():
+            # Check for explicit metadata identity
+            if key in attribute_string:
+                return key
+            
+            # Biometric check: Compare vertical coordinate values
+            if "vertical_levels" in specs and ("level" in dataset.coords or "lev" in dataset.coords):
+                data_coords = dataset.coords.get("level", dataset.coords.get("lev"))
+                data_levels = numpy.sort(data_coords.values)
+                
+                # Retrieve actual pressure values from aidadic via the fingerprint key
+                registry_levels = numpy.sort(aidadic.GRID_VALUES.get(specs["vertical_levels"], []))
+                
+                # Use numpy.allclose to handle floating point precision in coordinate arrays
+                if len(data_levels) == len(registry_levels):
+                    if numpy.allclose(data_levels, registry_levels, atol=1e-3):
+                        return key
+        return None
+
+    @staticmethod
+    def verify_factors(dataset, model_key):
+        """Tier 3: Performs an audit of the scientific integrity of the data."""
+        specs = aidadic.MODEL_REGISTRY[model_key]
+        
+        # Factor A: Horizontal Resolution Check
+        if "horizontal_res" in specs and specs["horizontal_res"] is not None:
+            longitude_resolution = float(dataset.lon.diff("lon").mean())
+            if not numpy.isclose(longitude_resolution, specs["horizontal_res"], atol=0.01):
+                raise ValueError(f"Passport Denied: Resolution {longitude_resolution} does not match {model_key} standard.")
+
+        # Factor B: Mandatory Variable Check
+        missing_variables = [var for var in specs.get("required_vars", []) if var not in dataset.variables]
+        if missing_variables:
+            raise ValueError(f"Passport Denied: Missing mandatory variables {missing_variables} for {model_key}.")
+
+        # Factor C: Data Integrity (Strict NaN check)
+        if not specs.get("allow_nans", True):
+            if dataset.to_array().isnull().any():
+                raise ValueError(f"Passport Denied: {model_key} dataset contains invalid NaN values.")
+
+    @staticmethod
+    def _get_interface_instance(path, config):
+        """Instantiates the interface class dynamically based on the registry path."""
+        module_name, class_name = path.rsplit(".", 1)
+        module = importlib.import_module(module_name)
+        interface_class = getattr(module, class_name)
+        return interface_class(config=config)
 
 
 class JEDIModelBridge:
     """
-    A high-level bridge in dalib.py that connects any AI forecast 
+    A high-level bridge in dalib.py that connects any AI/NWP forecast
     output to the JEDI/UFO observation operators.
     """
 
@@ -105,120 +193,50 @@ class JEDIModelBridge:
 
     def prepare_jedi_background(self, model_file):
         """
-        Takes a raw AI netCDF, identifies the model, 
-        standardizes it, and prepares it for UFO.
+        Uses the ModelPassport to identify and verify the file,
+        then standardizes it for UFO using aidadic mappings.
         """
         # 1. Open dataset
-        ds = xarray.open_dataset(model_file)
+        dataset = xarray.open_dataset(model_file)
 
-        # 2. Use ailib's Factory to identify the interface
-        # This keeps dalib.py clean of model-specific renaming logic
-        ai_bridge = ailib.ModelFactory.get_interface(ds, config=self.config)
-        
-        # 3. Standardize variables (T, Q, U, V, Z) and Coordinates (lev)
-        standardized_ds = ai_bridge.prepare_state(ds)
+        # 2. Authenticate and identify via the Passport
+        # This handles identity, grid fingerprints, and strict data integrity checks.
+        interface = ModelPassport.identify(dataset, config=self.config)
 
-        print(f"Detected and standardized background from: {type(ai_bridge).__name__}")
-        
+        # 3. Retrieve the specific model key for dictionary lookups
+        # (Assuming identify or the interface knows its registry key)
+        model_key = interface.get_model_key()
+        specs = aidadic.MODEL_REGISTRY[model_key]
+
+        # 4. Standardize Variables using the flattened aidadic mapping
+        # This renames model-specific names (e.g., 'spfh') to JEDI names (e.g., 'specific_humidity')
+        mapping = specs.get("mapping", {})
+        # Inverse mapping: {model_name: jedi_name} -> {jedi_name: model_name}
+        # But for preparation, we usually want: dataset.rename({model_name: jedi_name})
+        rename_dict = {v: k for k, v in mapping.items() if v in dataset.variables}
+        standardized_ds = dataset.rename(rename_dict)
+
+        # 5. Coordinate Standardization
+        # Ensure vertical coordinate is consistently named 'level' or 'pressure' for JEDI
+        if "lev" in standardized_ds.coords:
+            standardized_ds = standardized_ds.rename({"lev": "level"})
+
+        logging.info(f"JEDI Bridge: Standardized {model_key} using {len(rename_dict)} variable mappings.")
+
         return standardized_ds
 
     def generate_geovals(self, standardized_ds, output_path):
         """
-        Writes the standardized dataset to the format JEDI expects 
-        for GeoVaLs (Model variables at observation locations).
+        Writes the standardized dataset to the format JEDI expects for GeoVaLs.
         """
-        # Implementation depends on your DataManager.write_ioda logic
+        # Logic for writing IODA-compliant files goes here
         pass
+
+
+
 
 """
 Public functions
 """
 
-def get_common_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--date', required=True, help='Forecast date YYYYMMDD')
-    parser.add_argument('--cycle', required=True, help='Cycle hour (e.g., 00, 06, 12, 18)')
-    parser.add_argument('--expid', default='test_run', help='Experiment ID')
-    return parser
-
-
-def get_aida_args(description="AIESDA Script"):
-    """Centralized argument parser for all AIESDA scripts."""
-    parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('--date', type=str, required=True, help='Date in YYYYMMDD format')
-    parser.add_argument('--cycle', type=str, required=True, help='Cycle (00, 06, 12, 18)')
-    parser.add_argument('--expid', type=str, default='test', help='Experiment ID')
-    # Add other common flags found in both scripts here
-    return parser
-
-def run_assimilation(args, cfg):
-    """
-    Core AI Surface Assimilation Logic.
-    This replaces the duplicated code formerly at the top of the script.
-    """
-    work_dir = cfg['WORK_DIR']
-    print(f"Executing Surface AI Assimilation in {work_dir}")
-
-    # ... (Actual AI model loading and NCMRWF data processing goes here) ...
-    # e.g., model = load_model(f"{cfg['HOME']}/models/sfc_model.pth")
-
-def run_surface_assimilation(args, work_dir):
-    """Core logic moved into a function to be callable from aiesda.py"""
-    # ... (Actual AI model loading and data processing logic goes here) ...
-    print(f"Processing surface data for {args.date} in {work_dir}")
-
-def run_assim_logic(conf):
-    """
-    Core Logic: No longer parses args.
-    Uses the attributes provided by the AidaConfig instance.
-    """
-    # Use paths provided by aidaconf.py
-    # Example: conf.OBSDIR, conf.GESDIR, conf.OUTDIR
-    print(f"--- Surface Assimilation Phase ---")
-    print(f"Working Directory: {conf.DATADIR}")
-    print(f"Target Date: {conf.cdate}")
-
-    # Logic to load AI model using paths from conf
-    model_path = os.path.join(conf.STATICDIR, "sfc_model_v1.pth")
-
-    # ... Process Surface Data ...
-    # result = ai_engine.predict(input_data=conf.GESDIR)
-
-    print(f"Surface Analysis complete for {conf.expid}")
-
-def run_cycle(conf):
-    """
-    Core logic converted to a function. 
-    Uses the 'conf' object for all path references.
-    """
-    print(f"Processing Surface Data in: {conf.OUTDIR}")
-    
-    # Use paths defined in aidaconf.py
-    obs_file = os.path.join(conf.OBSDIR, f"sfc_obs_{conf.cdate}.nc")
-    guess_file = os.path.join(conf.GESDIR, f"sfc_guess_{conf.cdate}.nc")
-    
-    # ... AI Inference Logic Here ...
-    # result = model.predict(obs_file, guess_file)
-    
-    output_path = os.path.join(conf.OUTDIR, "analysis_sfc.nc")
-    print(f"Analysis saved to {output_path}")
-
-def execute_task(conf):
-    """
-    Main entry point for Surface Assimilation.
-    Receives an AidaConfig object with all paths pre-calculated.
-    """
-    # Use paths directly from the AidaConfig object
-    obs_path = conf.OBSDIR
-    guess_path = conf.GESDIR
-    output_path = conf.OUTDIR
-    
-    print(f"--- Surface AI Assimilation ---")
-    print(f"Reading Observations from: {obs_path}")
-    print(f"Reading Background from: {guess_path}")
-    
-    # AI Model Logic here
-    # Example: model = load_model(conf.STATICDIR + '/sfc_weights.pth')
-    
-    print(f"Saving Analysis to: {output_path}")
 

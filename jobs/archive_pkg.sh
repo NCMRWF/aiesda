@@ -35,5 +35,7 @@ ${JOBSDIR}/addfilesto_pkg.sh
 if [ ${HOST:0:6} == "elogin" ]; then
 ssh -x utility01 'cd '${GITROOT}'; git commit -a -m "Updated '${PKG_NAME}' for '$(echo ${MSGKEY} | tr "_" " " )'"; git push'
 else
-cd ${GITROOT}; git commit -a -m "Updated '${PKG_NAME}' for '$(echo ${MSGKEY} | tr "_" " " )'"; git push; git checkout main; git merge --no-ff NCMRWF-main; git push origin main
+#cd ${GITROOT}; git commit -a -m "Updated '${PKG_NAME}' for '$(echo ${MSGKEY} | tr "_" " " )'"; git push; git checkout main; git merge --no-ff NCMRWF-main; git push origin main
+cd ${GITROOT}; git commit -a -m "Updated '${PKG_NAME}' for '$(echo ${MSGKEY} | tr "_" " " )'"; git push
+#; git checkout main; git merge --no-ff NCMRWF-main; git push origin main
 fi

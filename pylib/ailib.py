@@ -345,40 +345,7 @@ class PrithviInterface:
             
         return standardized_ds
 
-class ModelFactory:
-    """
-    Automated interface selector for AI-NWP models.
-    Detects model type from dataset attributes or config.
-    """
-    @staticmethod
-    def get_interface(ds, config=None):
-        """
-        Args:
-            ds (xarray.Dataset): The raw output from an AI model.
-            config (dict): Optional manual override.
-        """
-        # 1. Check for explicit attributes (common in Prithvi/Anemoi)
-        model_name = ds.attrs.get('model_name', '').lower()
-        
-        # 2. Logic-based detection (level counts and variable names)
-        num_levels = len(ds.coords.get('level', ds.coords.get('lev', [])))
-        
-        if 'anemoi' in model_name or hasattr(ds, 'anemoi_metadata'):
-            return AnemoiInterface(config=config)
-        
-        if num_levels == 37:
-            # Check for MERRA-2 naming (Prithvi) vs ERA5 (GraphCast)
-            if 'QV' in ds.variables or 'T' in ds.variables:
-                return PrithviInterface(config=config)
-            return GraphCastInterface(config=config)
-            
-        if num_levels == 13:
-            # Pangu and FourCastNet share levels, differentiate by variable names
-            if 'z' in ds.variables and 'q' in ds.variables:
-                return PanguWeatherInterface(config=config)
-            return FourCastNetInterface(config=config)
-            
-        raise ValueError(f"Unknown model profile with {num_levels} levels. Please specify interface manually.")
+
 
 """
 Public functions
