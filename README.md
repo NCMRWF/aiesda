@@ -7,12 +7,6 @@ AIESDA is a robust framework designed to bridge **AI Foundation Models** (GraphC
 * **JEDI Model Bridge**: Automated standardization of AI outputs for Observation Operators (CRTM/RTTOV).
 * **Unified Registry**: Centralized management of variable mappings and vertical grid fingerprints.
 
-## 🛠 Installation
-```bash
-git clone [https://github.com/NCMRWF/aiesda.git](https://github.com/NCMRWF/aiesda.git)
-cd aiesda
-pip install -r requirements.txt
-
 🏗 System Architecture
 AIESDA follows a decoupled architecture to ensure scalability:
 
@@ -25,6 +19,15 @@ ailib/: Interfaces for AI Foundation Models.
 dynlib/: Interfaces for Dynamical/Coupled Models.
 
 dalib/: Bridges for JEDI, CRTM, and RTTOV.
+
+
+## 🛠 Installation
+```bash
+git clone [https://github.com/NCMRWF/aiesda.git](https://github.com/NCMRWF/aiesda.git)
+cd aiesda
+pip install -r requirements.txt
+
+
 
 🚦 Quick Start
 Python
