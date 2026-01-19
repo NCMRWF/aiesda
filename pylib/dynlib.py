@@ -1,6 +1,6 @@
 #! python3
 """
-Bharat Forecast System Interface
+Dynamical Forecast System Interface Library
 Created on Mon Jan 19 2026
 @author: gibies
 """
