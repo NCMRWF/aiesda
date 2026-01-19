@@ -10,11 +10,13 @@
 
 **aidaconf.py:** The Orchestrator (ModelPassport and workflow logic).
 
-**ailib/:** Interfaces for AI Foundation Models.
+**ailib.py:** Interfaces for AI Foundation Models.
 
-**dynlib/:** Interfaces for Dynamical/Coupled Models.
+**dynlib.py:** Interfaces for Dynamical/Coupled Models.
 
-**dalib/:** Bridges for JEDI, CRTM, and RTTOV.
+**dalib.py:** Bridges for JEDI, CRTM, and RTTOV.
+
+**scilib.py:** Scientific toolbox for validation, verification and evaluation
 
 ## 🚀 Key Features
 * **Model Passport**: A zero-trust multi-factor authentication system for meteorological data.
