@@ -34,7 +34,7 @@ The **Model Passport** replaces fragile "if-else" logic with a rigorous verifica
 2. **Biometric Factor**: Compares the vertical pressure levels of the file against known "fingerprints" using `numpy.allclose`. This distinguishes between models sharing similar level counts.
 3. **Integrity Factor**:
     * **Horizontal Resolution**: Validates the grid spacing (e.g., ensures a 0.25° model isn't processed as a 0.06° model).
-    * **Variable Completeness**: Ensures all required coupled fields (like SST for Bharat) are present.
+    * **Variable Completeness**: Ensures all required coupled fields (like SST for Mithuna) are present.
     * **Strict NaN Check**: Rejects data with null values to protect the DA solver.
 
 
