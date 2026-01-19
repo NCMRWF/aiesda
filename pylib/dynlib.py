@@ -4,10 +4,19 @@ Dynamical Forecast System Interface Library
 Created on Mon Jan 19 2026
 @author: gibies
 """
-import numpy
-import xarray
-import aidadic
-
+import sys
+import os
+CURR_PATH=os.path.dirname(os.path.abspath(__file__))
+PKGHOME=os.path.dirname(CURR_PATH)
+OBSLIB=os.environ.get('OBSLIB',PKGHOME+"/pylib")
+sys.path.append(OBSLIB)
+OBSDIC=os.environ.get('OBSDIC',PKGHOME+"/pydic")
+sys.path.append(OBSDIC)
+OBSNML=os.environ.get('OBSNML',PKGHOME+"/nml")
+sys.path.append(OBSNML)
+"""
+dynlib.py
+"""
 import numpy
 import xarray
 import pandas
@@ -15,72 +24,70 @@ import aidadic
 
 class BharatInterface:
     """
-    Interface for NCMRWF's Bharat Forecast System (Global Coupled).
-    Encapsulates all logic for the 6km/12km TCo dynamical grid.
+    Encapsulated Interface for Bharat Forecast System (Global Coupled).
+    Handles high-resolution TCo dynamical grid data.
     """
     def __init__(self, config=None):
         self.config = config or {}
-        # Load model-specific vertical coordinates from the dictionary
-        self.atmosphere_levels = numpy.array(aidadic.bharat_atmosphere_levels)
-        self.ocean_depth_levels = numpy.array(aidadic.bharat_ocean_depths)
-        self.resolution = 0.125  # ~12km resolution
+        self.atmosphere_levels = numpy.array(aidadic.bharat_atm_levels)
+        self.ocean_levels = numpy.array(aidadic.bharat_ocn_depths)
 
-    def prepare_state(self, raw_atmosphere_data, raw_ocean_data):
-        """
-        Model-specific standardization:
-        1. Renames internal BFS variables to JEDI standards.
-        2. Aligns disparate vertical coordinates.
-        3. Merges components into a single Coupled State.
-        """
-        # Atmospheric Mapping
+    def prepare_state(self, raw_atm, raw_ocn):
+        """Standardizes Bharat coupled data for JEDI ingestion."""
+        # 1. Atmospheric Processing
         atm_map = {v: k for k, v in aidadic.bharat_jedi_atm_mapping.items()}
-        std_atm = raw_atmosphere_data.rename(atm_map)
-
-        # Oceanic Mapping (Coupled variables)
+        standardized_atm = raw_atm.rename(atm_map)
+        
+        # 2. Oceanic Processing
         ocn_map = {v: k for k, v in aidadic.bharat_jedi_ocn_mapping.items()}
-        std_ocn = raw_ocean_data.rename(ocn_map)
+        standardized_ocn = raw_ocn.rename(ocn_map)
 
-        # Bharat Grid-Specific Logic: Enforce lev vs depth naming
-        std_atm = std_atm.rename({'level': 'lev'})
-        std_ocn = std_ocn.rename({'depth': 'ocean_depth'})
+        # 3. Model-Specific Vertical Alignment
+        # Bharat uses 'lev' for air and 'depth' for water
+        standardized_atm = standardized_atm.rename({'level': 'lev'})
+        standardized_ocn = standardized_ocn.rename({'depth': 'ocean_depth'})
 
-        # Return the Unified Coupled Dataset
-        standardized_ds = xarray.merge([std_atm, std_ocn])
-        return standardized_ds
-
+        # 4. Final Coupling
+        return xarray.merge([standardized_atm, standardized_ocn])
 
     def get_jedi_config(self):
-        """Returns the YAML-ready configuration specific to the Bharat model."""
+        """Returns the specific JEDI YAML parameters for BharatFS."""
         return {
-            "geometry": {
-                "atm_levels": len(self.atmosphere_levels),
-                "ocn_levels": len(self.ocean_depth_levels)
-            },
+            "model_name": "BharatFS",
+            "grid_type": "TCo",
+            "resolution": 0.0625,  # ~6km
             "variables": list(aidadic.bharat_jedi_atm_mapping.keys()) + 
                         list(aidadic.bharat_jedi_ocn_mapping.keys())
         }
 
 class MithunaInterface:
     """
-    Interface for the Mithuna Global Coupled Forecast System.
-    Handles specialized physics and regional high-res coupling.
+    Encapsulated Interface for Mithuna Global Coupled Model.
+    Handles standard global grid data at 12km resolution.
     """
     def __init__(self, config=None):
         self.config = config or {}
         self.levels = numpy.array(aidadic.mithuna_levels)
-        self.resolution = self.config.get('res', 0.1)
 
-    def prepare_state(self, raw_data):
-        # Specific naming logic for Mithuna (e.g., handling 'plev' or 'vertical')
-        mapping = {v: k for k, v in aidadic.mithuna_jedi_var_mapping.items()}
-        standardized_dataset = raw_data.rename(mapping)
+    def prepare_state(self, raw_coupled_data):
+        """Processes Mithuna's integrated atmosphere-ocean file."""
+        mapping = {v: k for k, v in aidadic.mithuna_jedi_mapping.items()}
+        standardized_ds = raw_coupled_data.rename(mapping)
+
+        # Mithuna specific: rename coordinate levels if they vary
+        if 'pressure' in standardized_ds.coords:
+            standardized_ds = standardized_ds.rename({'pressure': 'lev'})
         
-        # Enforce naming conventions
-        for coord in ['pressure', 'plev', 'level']:
-            if coord in standardized_dataset.coords:
-                standardized_dataset = standardized_dataset.rename({coord: 'lev'})
-        
-        return standardized_dataset
+        return standardized_ds
+
+    def get_jedi_config(self):
+        return {
+            "model_name": "MithunaFS",
+            "resolution": 0.125, # 12km
+            "variables": list(aidadic.mithuna_jedi_mapping.keys())
+        }
+
+
 
 
 
