@@ -27,8 +27,7 @@ from datetime import datetime, timedelta
 import ailib
 import dalib
 import yaml
-import mithuna
-import bharatfs
+import dynlib
 import aidadic
 
 class AidaConfig:
@@ -112,10 +111,10 @@ class ModelFactory:
 
         # 1. NCMRWF National Systems
         if 'bharat' in model_name:
-            return bharat.BharatInterface(config=config)
+            return dynlib.BharatInterface(config=config)
         
         if 'mithuna' in model_name or 'midhuna' in model_name: # Handle legacy naming in files
-            return mithuna.MithunaInterface(config=config)
+            return dynlib.MithunaInterface(config=config)
 
         # 2. Global AI Foundation Models (ailib)
         if num_levels == 37:
