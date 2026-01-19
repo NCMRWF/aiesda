@@ -14,7 +14,7 @@
 
 **dynlib.py:** Interfaces for Dynamical/Coupled Models.
 
-**dalib.py:** Bridges for JEDI, CRTM, and RTTOV.
+**dalib.py:** Bridges for JEDI (IODA, UFO, SABER, OOPS), CRTM, and RTTOV.
 
 **scilib.py:** Scientific toolbox for validation, verification and evaluation
 
