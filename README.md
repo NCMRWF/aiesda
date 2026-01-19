@@ -1,20 +1,20 @@
 # AIESDA: Artificial Intelligence based Earth System Data Assimilation
 
-AIESDA is a robust framework designed to bridge **AI Foundation Models** (GraphCast, Pangu-Weather, etc.) with **Dynamical Forecast Systems** (Bharat, Mithuna) and **Data Assimilation engines** like JEDI/UFO.
+***AIESDA*** is a robust framework designed to bridge **AI Foundation Models** (GraphCast, Pangu-Weather, etc.) with **Dynamical Forecast Systems** (Bharat, Mithuna) and **Data Assimilation engines** like JEDI/UFO.
 
 
 ## 🏗 System Architecture
-AIESDA follows a decoupled architecture to ensure scalability:
+***AIESDA*** follows a decoupled architecture to ensure scalability:
 
-aidadic.py: The "Source of Truth" (Registry and Mappings).
+**aidadic.py:** The "Source of Truth" (Registry and Mappings).
 
-aidaconf.py: The Orchestrator (ModelPassport and workflow logic).
+**aidaconf.py:** The Orchestrator (ModelPassport and workflow logic).
 
-ailib/: Interfaces for AI Foundation Models.
+**ailib/:** Interfaces for AI Foundation Models.
 
-dynlib/: Interfaces for Dynamical/Coupled Models.
+**dynlib/:** Interfaces for Dynamical/Coupled Models.
 
-dalib/: Bridges for JEDI, CRTM, and RTTOV.
+**dalib/:** Bridges for JEDI, CRTM, and RTTOV.
 
 ## 🚀 Key Features
 * **Model Passport**: A zero-trust multi-factor authentication system for meteorological data.
