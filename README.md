@@ -18,26 +18,10 @@ AIESDA (Artificial Intelligence based Earth System Data Assimilation) is a next-
 **scilib.py:** Scientific toolbox for validation, verification and evaluation
 
 ## 🚀 Key Features
-* **Model Passport**: A zero-trust multi-factor authentication system for meteorological data.
-* **JEDI Model Bridge**: Automated standardization of AI outputs for Observation Operators (CRTM/RTTOV).
-* **Unified Registry**: Centralized management of variable mappings and vertical grid fingerprints.
-
-
-**The Multi-Factor Model Passport**
-
-#### Overview
-The **Model Passport** replaces fragile "if-else" logic with a rigorous verification system. Every dataset entering the assimilation cycle must pass a three-tier check to ensure scientific integrity and prevent JEDI solver crashes.
-
-
-
-#### The Three Tiers of Verification
-1. **Identity Factor**: Scans global metadata attributes for recognized source tags (e.g., `graphcast`, `bharat`).
-2. **Biometric Factor**: Compares the vertical pressure levels of the file against known "fingerprints" using `numpy.allclose`. This distinguishes between models sharing similar level counts.
-3. **Integrity Factor**:
-    * **Horizontal Resolution**: Validates the grid spacing (e.g., ensures a 0.25° model isn't processed as a 0.06° model).
-    * **Variable Completeness**: Ensures all required coupled fields (like SST for Mithuna) are present.
-    * **Strict NaN Check**: Rejects data with null values to protect the DA solver.
-
+**Modular Design**
+**Object Oriented**
+**Seperation of concern**
+**Model Passport Verification at the entry level of data**
 
 ## 🛠 Installation
 ```bash
