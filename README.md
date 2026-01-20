@@ -18,9 +18,13 @@ AIESDA (Artificial Intelligence based Earth System Data Assimilation) is a next-
 **scilib.py:** Scientific toolbox for validation, verification and evaluation
 
 ## 🚀 Key Features
+
 **Modular Design**
+
 **Object Oriented**
+
 **Seperation of concern**
+
 **Model Passport Verification at the entry level of data**
 
 ## 🛠 Installation
