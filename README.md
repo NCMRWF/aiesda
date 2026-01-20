@@ -19,9 +19,7 @@ AIESDA (Artificial Intelligence based Earth System Data Assimilation) is a next-
 
 ## 🚀 Key Features
 
-**Modular Design**
-
-**Object Oriented**
+**Modular and Object Oriented Design**
 
 **Seperation of concern**
 
