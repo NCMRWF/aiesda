@@ -18,6 +18,8 @@ AIESDA (Artificial Intelligence based Earth System Data Assimilation) is a next-
 ```bash
 git clone https://github.com/NCMRWF/aiesda.git
 cd aiesda
+# Initialize the module system (if not already in your .bashrc)
+source /etc/profile.d/modules.sh
 ./install.sh
 
 module use ~/modulefiles; 
