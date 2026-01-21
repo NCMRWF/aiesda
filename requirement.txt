@@ -10,7 +10,6 @@ h5py>=3.7.0
 matplotlib>=3.5.0
 seaborn>=0.11.0
 cartopy>=0.20.0
-pyproj>=3.3.0
 
 # --- NCAR Legacy Graphics & I/O ---
 # Note: These are legacy and best installed via Conda
@@ -46,5 +45,14 @@ attrs>=21.4.0
 loguru>=0.6.0
 tqdm>=4.64.0
 python-dotenv>=0.20.0
+
+# --- AI & Earth System Modeling (ECMWF Anemoi Stack) ---
+# Core ecosystem for training and inference in AIESDA
+anemoi-datasets>=0.5.0
+anemoi-models>=0.0.1
+anemoi-training>=0.0.1
+anemoi-graphs>=0.0.1
+anemoi-inference>=0.1.0
+anemoi-transform>=0.0.1
 
 
