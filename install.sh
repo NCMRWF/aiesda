@@ -12,7 +12,7 @@ echo "🚀 Installing ${PROJECT_NAME} v${VERSION}..."
 
 # --- 2. Dependency Management ---
 echo "🐍 Upgrading pip and installing requirements..."
-python3 -m pip install --upgrade pip
+python3 -m pip install --user --upgrade pip
 
 if [ -f "$REQUIREMENTS" ]; then
     python3 -m pip install --user -r "$REQUIREMENTS"
