@@ -72,12 +72,22 @@ echo "------------------------------------------------------------"
 ###########################################################
 
 # --- 5. Testing Environment ---
-# 1. Load the environment
-module use ${HOME}/modulefiles
-module load aiesda/0.1.0
+# We use a subshell to test so we don't mess up the current terminal
+(
+    # Try to find and source modules if available
+    [ -f /usr/share/modules/init/bash ] && source /usr/share/modules/init/bash
 
-# 2. Check variables
-echo $AIESDA_NML
+    if command -v module >/dev/null 2>&1; then
+        module use ${HOME}/modulefiles
+        module load aiesda/${VERSION}
+        echo "🧪 Testing module load..."
+	# 2. Check environment variables
+	echo $AIESDA_NML
+	# 3. Check Python resolution
+        python3 -c "import aidaconf; print('✅ Success! aidaconf found at:', aidaconf.__file__)"
+    else
+        echo "⚠️  Note: 'module' command not found. Environment module created but not tested."
+        echo "   To fix: sudo apt install environment-modules"
+    fi
+)
 
-# 3. Check Python resolution
-python3 -c "import aidaconfy; print('Success! Path:', aidaconfy.__file__)"
