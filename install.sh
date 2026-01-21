@@ -25,6 +25,8 @@ python3 setup.py build --build-base "${BUILD_DIR}"
 # --- 3. Internal Paths ---
 # The root of the package inside the build path
 AIESDA_INSTALLED_ROOT="${BUILD_DIR}/lib/aiesda"
+# Ensure all asset folders are physically in the build root
+cp -r ${PROJECT_ROOT}/nml ${PROJECT_ROOT}/yaml ${PROJECT_ROOT}/jobs ${AIESDA_INSTALLED_ROOT}/
 
 # --- 4. Generate Environment Module ---
 mkdir -p $(dirname "${MODULE_FILE}")
@@ -47,7 +49,7 @@ setenv          AIESDA_YAML     \$aiesda_root/yaml
 prepend-path     PYTHONPATH      \$aiesda_root/pylib
 
 # Script Access (Versioned)
-prepend-path     PATH            \$aiesda_root/scripts
+prepend-path     PATH            \$aiesda_root/jobs
 EOF
 
 echo "------------------------------------------------------------"
