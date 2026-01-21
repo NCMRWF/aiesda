@@ -8,6 +8,7 @@ MODULE_FILE="${HOME}/modulefiles/${PROJECT_NAME}/${VERSION}"
 REQUIREMENTS="${PROJECT_ROOT}/requirement.txt"
 
 echo "🚀 Installing ${PROJECT_NAME} v${VERSION}..."
+#########################################################
 
 # --- 2. Dependency Management ---
 echo "🐍 Upgrading pip and installing requirements..."
@@ -21,12 +22,20 @@ fi
 
 rm -rf "${BUILD_DIR}"
 python3 setup.py build --build-base "${BUILD_DIR}"
+##########################################################
 
 # --- 3. Internal Paths ---
 # The root of the package inside the build path
 AIESDA_INSTALLED_ROOT="${BUILD_DIR}/lib/aiesda"
-# Ensure all asset folders are physically in the build root
-cp -r ${PROJECT_ROOT}/nml ${PROJECT_ROOT}/yaml ${PROJECT_ROOT}/jobs ${AIESDA_INSTALLED_ROOT}/
+
+# Ensure the build lib directory exists before copying assets
+mkdir -p "${AIESDA_INSTALLED_ROOT}"
+
+echo "📂 Snapshotting assets to build directory..."
+cp -rp ${PROJECT_ROOT}/nml ${AIESDA_INSTALLED_ROOT}/
+cp -rp ${PROJECT_ROOT}/yaml ${AIESDA_INSTALLED_ROOT}/
+cp -rp ${PROJECT_ROOT}/jobs ${AIESDA_INSTALLED_ROOT}/
+###########################################################
 
 # --- 4. Generate Environment Module ---
 mkdir -p $(dirname "${MODULE_FILE}")
