@@ -17,28 +17,37 @@ python3 -m pip install --user --upgrade pip
 
 # --- 2. Dependency Management ---
 if [ -f "$REQUIREMENTS" ]; then
-    echo "🐍 Phase 1: Installing Core Python Stack..."
-    # These are high-reliability wheels
-    python3 -m pip install --user --break-system-packages \
-        numpy pandas scipy xarray netCDF4 h5py pyyaml matplotlib cartopy tqdm loguru || exit 1
+	echo "🐍 Phase 1: Installing Core Python Stack..."
+	# These are high-reliability wheels
+	python3 -m pip install --user --break-system-packages \
+		numpy pandas scipy xarray netCDF4 h5py pyyaml matplotlib cartopy tqdm loguru || exit 1
 
-    echo "🐍 Phase 2: Installing AI Stack..."
-    python3 -m pip install --user --break-system-packages \
-        torch torchvision pytorch-lightning scikit-learn
+	echo "🐍 Phase 2: Installing AI Stack..."
+	python3 -m pip install --user --break-system-packages \
+		torch torchvision pytorch-lightning scikit-learn
 
-    echo "🧪 Phase 3: Attempting Complex Bindings (JEDI/Anemoi/NCAR)..."
-    # We use a loop to prevent one heavy C++ binding failure from killing the script
-    COMPLEX_PKGS=(pyioda pyufo pyoops pynio pyngl anemoi-models anemoi-datasets anemoi-graphs)
-    for pkg in "${COMPLEX_PKGS[@]}"; do
-        echo "   Installing $pkg..."
-        python3 -m pip install --user "$pkg" --break-system-packages || echo "⚠️  Skipping $pkg (C-libs missing)"
-    done
+	echo "🧪 Phase 3: Installing Anemoi AI Stack..."
+	# Install the core anemoi packages in a specific order
+	ANEMOI_PKGS=(anemoi-datasets anemoi-models anemoi-inference anemoi-graphs anemoi-transform)
 
-    echo "📦 Phase 4: Final sync with requirements.txt..."
-    # This catches anything missed in the previous tiers
-    python3 -m pip install --user -r "$REQUIREMENTS" --break-system-packages || echo "⚠️  Final sync had issues."
+	for pkg in "${ANEMOI_PKGS[@]}"; do
+	    echo "📦 Installing $pkg..."
+	    python3 -m pip install --user "$pkg" --break-system-packages || echo "⚠️ Failed to install $pkg"
+	done
+
+	echo "🧪 Phase 34 Attempting Complex Bindings (JEDI/NCAR)..."
+	# We use a loop to prevent one heavy C++ binding failure from killing the script
+	COMPLEX_PKGS=(pyioda pyufo pyoops pynio pyngl)
+	for pkg in "${COMPLEX_PKGS[@]}"; do
+        	echo "   Installing $pkg..."
+		python3 -m pip install --user "$pkg" --break-system-packages || echo "⚠️  Skipping $pkg (C-libs missing)"
+	done
+
+	echo "📦 Phase 5: Final sync with requirements.txt..."
+	# This catches anything missed in the previous tiers
+	python3 -m pip install --user -r "$REQUIREMENTS" --break-system-packages || echo "⚠️  Final sync had issues."
 else
-    echo "⚠️  Warning: requirement.txt not found, skipping Phase 4."
+	echo "⚠️  Warning: requirement.txt not found, skipping Phase 4."
 fi
 
 
