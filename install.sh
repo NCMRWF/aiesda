@@ -15,10 +15,12 @@ echo "🐍 Upgrading pip and installing requirements..."
 python3 -m pip install --user --upgrade pip
 
 if [ -f "$REQUIREMENTS" ]; then
-    python3 -m pip install --user -r "$REQUIREMENTS"
+    # We skip-broken or ignore legacy pynio/pyngl if they cause crashes
+    python3 -m pip install --user -r "$REQUIREMENTS" || echo "⚠️ Some dependencies failed. Check C-libraries."
 else
     echo "⚠️  Warning: requirement.txt not found, skipping pip install."
 fi
+
 
 rm -rf "${BUILD_DIR}"
 python3 setup.py build --build-base "${BUILD_DIR}"
