@@ -88,6 +88,11 @@ cat << EOF > "${MODULE_FILE}"
 #%Module1.0
 ## AIESDA Environment Module v${VERSION}
 
+# Dependencies (Example: Loading the JEDI stack available at NCMRWF)
+if { [is-loaded jedi] == 0 } {
+    module load jedi/1.5.0
+}
+
 set version      ${VERSION}
 set aiesda_root  ${AIESDA_INSTALLED_ROOT}
 
