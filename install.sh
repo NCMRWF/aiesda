@@ -35,12 +35,15 @@ if [ -f "$REQUIREMENTS" ]; then
 	    python3 -m pip install --user "$pkg" --break-system-packages || echo "⚠️ Failed to install $pkg"
 	done
 
-	echo "🧪 Phase 34 Attempting Complex Bindings (JEDI/NCAR)..."
-	# We use a loop to prevent one heavy C++ binding failure from killing the script
-	COMPLEX_PKGS=(pyioda pyufo pyoops pynio pyngl)
-	for pkg in "${COMPLEX_PKGS[@]}"; do
-        	echo "   Installing $pkg..."
+	echo "🔍 Phase 4: Checking for specialized JEDI/NCAR bindings..."
+	SPECIAL_LIBS=(ioda ufo oops Nio Ngl)
+	for lib in "${SPECIAL_LIBS[@]}"; do
+	    if python3 -c "import $lib" >/dev/null 2>&1; then
+	        echo "✅ $lib is already available in the environment."
+	    else
+	        echo "⚠️  $lib NOT found. Please run 'module load jedi' or 'module load ncl'."
 		python3 -m pip install --user "$pkg" --break-system-packages || echo "⚠️  Skipping $pkg (C-libs missing)"
+	    fi
 	done
 
 	echo "📦 Phase 5: Final sync with requirements.txt..."
