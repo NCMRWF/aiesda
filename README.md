@@ -15,12 +15,19 @@ AIESDA (Artificial Intelligence based Earth System Data Assimilation) is a next-
 **Model Passport Verification at the entry level of data**
 
 ## 🛠 Installation
-```bash
+```
+bash
 git clone https://github.com/NCMRWF/aiesda.git
 cd aiesda
 
-pip install -r requirements.txt
-python3 setup.py build
+# Upgrade pip first
+pip install --upgrade pip
+
+# Install the requirements
+pip install -r requirement.txt
+
+# Building the package
+python3 setup.py build --build-base /home/.....path....for...build..../aiesda_build
 ```
 
 
