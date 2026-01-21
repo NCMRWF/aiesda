@@ -15,8 +15,7 @@ AIESDA (Artificial Intelligence based Earth System Data Assimilation) is a next-
 **Model Passport Verification at the entry level of data**
 
 ## 🛠 Installation
-```
-bash
+```bash
 git clone https://github.com/NCMRWF/aiesda.git
 cd aiesda
 
@@ -47,7 +46,6 @@ interface = ModelPassport.identify(ds)
 # Standardize for JEDI
 standard_ds = interface.prepare_state(ds)
 
----
 ```
 
 ## 🛠 Adding a New Model to the Registry
