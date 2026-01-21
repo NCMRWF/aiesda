@@ -5,19 +5,23 @@ setup(
     version="0.1.0",
     description="Artificial Intelligence based Earth System Data Assimilation",
     author="gibies",
-    # We define the sub-packages within the aiesda namespace
-    packages=["aiesda.pylib", "aiesda.pydic", "aiesda.scripts", "aiesda.jobs"],
-    # We map those namespaces to your physical folder names
+    # Define the hierarchy
+    packages=["aiesda", "aiesda.pylib", "aiesda.pydic", "aiesda.scripts"],
+
+    # Mapping namespaces to physical directories
     package_dir={
+        "aiesda": "pylib",          # This makes aiesda/aidaconf.py accessible
         "aiesda.pylib": "pylib",
         "aiesda.pydic": "pydic",
         "aiesda.scripts": "scripts",
-        "aiesda.jobs": "jobs",
-        "aiesda.nml": "nml",
-        "aiesda.yaml": "yaml",
     },
-    # This handles the non-python files (yml, nml) if needed later
+
+    # Ensuring configs are bundled into the versioned build
+    package_data={
+        "aiesda": ["nml/*.nml", "yaml/*.yml", "jobs/*.sh", "palette/*"],
+    },
     include_package_data=True,
+    zip_safe=False,
     install_requires=[
         "numpy>=1.22.4",
         "torch>=1.12.0",
