@@ -149,8 +149,14 @@ if [ "$DA_MISSING" -eq 1 ] && [ "$IS_WSL" = true ]; then
 FROM jcsda/docker-gnu-openmpi-dev:latest
 USER root
 
+# Check if python3 exists before trying to use it or install it
+RUN if ! command -v python3 >/dev/null 2>&1; then \
+        apt-get update && apt-get install -y python3 python3-pip libeccodes-dev; \
+    else \
+        echo "Python3 already present, ensuring pip is available..." && \
+        apt-get update && apt-get install -y python3-pip libeccodes-dev; \
+    fi && rm -rf /var/lib/apt/lists/*
 # Install system dependencies needed for some python wheels
-RUN apt-get update && apt-get install -y python3-pip libeccodes-dev && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/aiesda
 COPY requirement.txt .
