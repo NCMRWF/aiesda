@@ -4,8 +4,9 @@
 # ==============================================================================
 
 # --- 1. Configuration ---
-# Read version from central tracker; default to 'dev' if file missing
-VERSION=$(cat VERSION | tr -d '[:space:]' | sed 's/\.0\+/\./g') 2>/dev/null || echo "dev")
+# Read version, clean whitespace, and strip leading zeros (2026.01 -> 2026.1)
+VERSION=$(cat VERSION 2>/dev/null | tr -d '[:space:]' | sed 's/\.0\+/\./g')
+VERSION=${VERSION:-"dev"}  # If VERSION is empty or file missing, default to 'dev'
 PROJECT_NAME="aiesda"
 PROJECT_ROOT=$(pwd)
 BUILD_DIR="${HOME}/build/${PROJECT_NAME}_build_${VERSION}"
@@ -157,7 +158,9 @@ RUN if ! command -v python3 >/dev/null 2>&1; then \
         apt-get update && apt-get install -y python3-pip libeccodes-dev; \
     fi && rm -rf /var/lib/apt/lists/*
 # Install system dependencies needed for some python wheels
-
+RUN apt-get update && apt-get install -y python3-pip libeccodes-dev && \
+    rm -rf /var/lib/apt/lists/*
+ENV PATH="/usr/bin:/usr/local/bin:\${PATH}"
 WORKDIR /home/aiesda
 COPY requirement.txt .
 
