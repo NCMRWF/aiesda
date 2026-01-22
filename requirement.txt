@@ -49,7 +49,7 @@ anemoi-inference>=0.1.0
 anemoi-transform>=0.0.1
 # === END BLOCK ===
 
-# === BLOCK: NCAR Legacy Graphics and I/O ===
+# === BLOCK: NCAR Legacy Graphics and InOut ===
 pynio
 pyngl
 # === END BLOCK ===

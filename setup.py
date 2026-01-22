@@ -1,8 +1,11 @@
 from setuptools import setup, find_packages
 
+with open("VERSION", "r") as f:
+    version = f.read().strip()
+
 setup(
     name="aiesda",
-    version="0.1.0",
+    version=version,
     description="Artificial Intelligence based Earth System Data Assimilation",
     author="gibies",
     # Define the hierarchy

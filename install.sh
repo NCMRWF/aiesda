@@ -4,7 +4,8 @@
 # ==============================================================================
 
 # --- 1. Configuration ---
-VERSION="0.1.0"
+# Read version from central tracker; default to 'dev' if file missing
+VERSION=$(cat VERSION | tr -d '[:space:]' 2>/dev/null || echo "dev")
 PROJECT_NAME="aiesda"
 PROJECT_ROOT=$(pwd)
 BUILD_DIR="${HOME}/build/${PROJECT_NAME}_build_${VERSION}"
@@ -22,7 +23,7 @@ NATIVE_BLOCKS=(
 )
 
 COMPLEX_BLOCKS=(
-    "NCAR Legacy Graphics and I/O"
+    "NCAR Legacy Graphics and InOut"
     "JCSDA JEDI and Related Stack"
 )
 ###########################################################
