@@ -10,21 +10,7 @@ REQUIREMENTS="${PROJECT_ROOT}/requirement.txt"
 AIESDA_INSTALLED_ROOT="${BUILD_DIR}"
 ###########################################################
 
-# --- Pre-flight Check: Docker for JEDI ---
-echo "🔍 Checking for Docker (Required for JEDI on Laptops)..."
-if ! command -v docker &> /dev/null; then
-    echo "❌ ERROR: Docker command not found."
-    echo "   Please install Docker Desktop on Windows and enable WSL Integration."
-    echo "   JEDI is CRITICAL and cannot be installed natively on this machine."
-    exit 1
-fi
 
-if ! docker ps &> /dev/null; then
-    echo "⚠️  WARNING: Docker is installed but not running."
-    echo "   Please start Docker Desktop on Windows and try again."
-    exit 1
-fi
-echo "✅ Docker detected and running."
 
 ###########################################################
 
@@ -86,6 +72,30 @@ done
 ###########################################################
 
 # --- 4. WSL/Laptop Docker Fallback ---
+
+# --- Pre-flight Check: Docker for JEDI ---
+# Only run this if we are in WSL and JEDI is missing natively
+if [ "$IS_WSL" = true ] && [ "$DA_MISSING" -eq 1 ]; then
+    echo "🐳 JEDI Bridge: Configuring Docker environment for AIESDA..."
+    
+    # 1. Verify Docker is shared with WSL
+    if ! docker ps &>/dev/null; then
+        echo "❌ Docker check failed! Ensure Docker Desktop is running"
+        echo "   and 'WSL Integration' is enabled for this Ubuntu distro."
+        exit 1
+    fi
+
+    # 2. Build the image (using the JEDI base)
+    docker build -t aiesda_jedi:latest .
+
+    # 3. Add the alias to .bashrc for future sessions
+    if ! grep -q "aida-run" ~/.bashrc; then
+        echo "alias aida-run='docker run -it --rm -v \$(pwd):/home/aiesda aiesda_jedi:latest'" >> ~/.bashrc
+        echo "✅ Created 'aida-run' alias. Use this to run JEDI tasks."
+    fi
+    echo "✅ Docker detected and running."
+fi
+
 if [ "$DA_MISSING" -eq 1 ]; then
     echo "🐳 Complex libraries missing. Building Docker Fallback..."
     if command -v docker &>/dev/null; then
