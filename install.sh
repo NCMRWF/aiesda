@@ -167,9 +167,11 @@ COPY requirement.txt .
 # 3. Use absolute path for pip install
 RUN /usr/bin/python3 -m pip install --no-cache-dir -r requirement.txt --break-system-packages
 
-# 4. Set Paths: 1. Your AIESDA libs, 2. The internal JEDI python bindings
-ENV PYTHONPATH="/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:/usr/local/lib/python3.12/dist-packages:/usr/local/lib:\${PYTHONPATH}"
-ENV PATH="/home/aiesda/lib/aiesda/scripts:/home/aiesda/lib/aiesda/jobs:\${PATH}"
+# 4. Set environment for JEDI and AIESDA
+# We include both the site-packages for UFO and the local AIESDA paths
+ENV PYTHONPATH="/usr/local/lib/python3.12/dist-packages:/usr/local/lib:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:\${PYTHONPATH}"
+ENV LD_LIBRARY_PATH="/usr/local/lib:\${LD_LIBRARY_PATH}"
+ENV PATH="/usr/bin:/usr/local/bin:\${PATH}"
 
 # 5. Verification check during build
 # Use absolute path for the final verification
