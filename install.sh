@@ -6,119 +6,109 @@ PROJECT_ROOT=$(pwd)
 BUILD_DIR="${HOME}/build/${PROJECT_NAME}_build_${VERSION}"
 MODULE_FILE="${HOME}/modulefiles/${PROJECT_NAME}/${VERSION}"
 REQUIREMENTS="${PROJECT_ROOT}/requirement.txt"
+AIESDA_INSTALLED_ROOT="${BUILD_DIR}"
 
-echo "🚀 Installing ${PROJECT_NAME} v${VERSION}..."
-#########################################################
+# --- 2. Block Definition ---
+# These names must match the "# --- Name ---" headers in your requirement.txt
+NATIVE_BLOCKS=("Numerical & Data Handling" "Visualization" "AI & Deep Learning" "Meteorological Specifics" "Configuration & Logging" "AI & Earth System Modeling")
+COMPLEX_BLOCKS=("JEDI & SABER Stack" "NCAR Library")
 
-# --- 2. Dependency Management ---
-echo "🐍 Upgrading pip and installing requirements..."
-python3 -m pip install --user --upgrade pip
+echo "🚀 Starting Block-Wise Installation for ${PROJECT_NAME} v${VERSION}..."
 
+# Helper: Extract packages between markers
+get_req_block() {
+    local block_name=$1
+    if [ -f "$REQUIREMENTS" ]; then
+        # Extracts from the header until the next empty line or next header
+        sed -n "/# --- ${block_name} ---/,/^\s*$/p" "$REQUIREMENTS" | grep -v "^#" | grep -v "^$"
+    fi
+}
 
-# --- 2. Dependency Management ---
-if [ -f "$REQUIREMENTS" ]; then
-	echo "🐍 Phase 1: Installing Core Python Stack..."
-	# These are high-reliability wheels
-	python3 -m pip install --user --break-system-packages \
-		numpy pandas scipy xarray netCDF4 h5py pyyaml matplotlib cartopy tqdm loguru || exit 1
+# --- 3. Dependency Management Loop ---
+echo "🐍 Upgrading pip..."
+python3 -m pip install --user --upgrade pip --break-system-packages
 
-	echo "🐍 Phase 2: Installing AI Stack..."
-	python3 -m pip install --user --break-system-packages \
-		torch torchvision pytorch-lightning scikit-learn
+# Install Native Blocks
+for block in "${NATIVE_BLOCKS[@]}"; do
+    echo "📦 Installing block: [$block]..."
+    PKGS=$(get_req_block "$block")
+    if [ ! -z "$PKGS" ]; then
+        python3 -m pip install --user $PKGS --break-system-packages || echo "⚠️ Issues in $block"
+    fi
+done
 
-	echo "🧪 Phase 3: Installing Anemoi AI Stack..."
-	# Install the core anemoi packages in a specific order
-	ANEMOI_PKGS=(anemoi-datasets anemoi-models anemoi-inference anemoi-graphs anemoi-transform)
+# Check Complex Blocks (JEDI/NCAR)
+DA_MISSING=0
+for block in "${COMPLEX_BLOCKS[@]}"; do
+    echo "🔍 Checking complex block: [$block]..."
+    PKGS=$(get_req_block "$block")
+    for pkg in $PKGS; do
+        # Clean name for import check: removes py, versions, and whitespace
+        lib=$(echo $pkg | cut -d'=' -f1 | cut -d'>' -f1 | sed 's/py//' | tr -d '[:space:]')
+        if ! python3 -c "import $lib" &>/dev/null; then
+            echo "❌ $lib not found natively."
+            DA_MISSING=1
+        fi
+    done
+done
 
-	for pkg in "${ANEMOI_PKGS[@]}"; do
-	    echo "📦 Installing $pkg..."
-	    python3 -m pip install --user "$pkg" --break-system-packages || echo "⚠️ Failed to install $pkg"
-	done
-
-	echo "🔍 Phase 4: Checking for specialized JEDI/NCAR bindings..."
-	SPECIAL_LIBS=(ioda ufo oops Nio Ngl)
-	for lib in "${SPECIAL_LIBS[@]}"; do
-	    if python3 -c "import $lib" >/dev/null 2>&1; then
-	        echo "✅ $lib is already available in the environment."
-	    else
-	        echo "⚠️  $lib NOT found. Please run 'module load jedi' or 'module load ncl'."
-		python3 -m pip install --user "$pkg" --break-system-packages || echo "⚠️  Skipping $pkg (C-libs missing)"
-	    fi
-	done
-
-	echo "📦 Phase 5: Final sync with requirements.txt..."
-	# This catches anything missed in the previous tiers
-	python3 -m pip install --user -r "$REQUIREMENTS" --break-system-packages || echo "⚠️  Final sync had issues."
-else
-	echo "⚠️  Warning: requirement.txt not found, skipping Phase 4."
+# --- 4. WSL/Laptop Docker Fallback ---
+if [ $DA_MISSING -eq 1 ]; then
+    echo "🐳 Complex libraries missing. Triggering Docker Build for Laptop/WSL..."
+    if command -v docker >/dev/null 2>&1; then
+        cat << EOF > Dockerfile
+FROM jcsda/docker-gnu-openmpi-dev:latest
+WORKDIR /home/aiesda
+COPY requirement.txt .
+RUN pip3 install --no-cache-dir -r requirement.txt --break-system-packages
+ENV PYTHONPATH="/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:\${PYTHONPATH}"
+ENV PATH="/home/aiesda/lib/aiesda/scripts:/home/aiesda/lib/aiesda/jobs:\${PATH}"
+EOF
+        docker build -t aiesda_da:latest .
+        ! grep -q "aida-run" ~/.bashrc && echo "alias aida-run='docker run -it --rm -v \$(pwd):/home/aiesda aiesda_da:latest'" >> ~/.bashrc
+    fi
 fi
 
-
+# --- 5. Build and Module Generation ---
+# (Same logic as before, ensuring your flat PYTHONPATH/PATH requirements)
+echo "🏗️ Building Python package..."
 rm -rf "${BUILD_DIR}"
 python3 setup.py build --build-base "${BUILD_DIR}"
-##########################################################
 
-# --- 3. Internal Paths ---
-# The root of the package inside the build path
-AIESDA_INSTALLED_ROOT="${BUILD_DIR}/lib/aiesda"
+AIESDA_INTERNAL_LIB="${BUILD_DIR}/lib/aiesda"
+mkdir -p "${AIESDA_INTERNAL_LIB}"
+for asset in nml yaml jobs scripts pydic; do
+    [ -d "${PROJECT_ROOT}/$asset" ] && cp -rp "${PROJECT_ROOT}/$asset" "${AIESDA_INTERNAL_LIB}/"
+done
 
-# Ensure the build lib directory exists before copying assets
-mkdir -p "${AIESDA_INSTALLED_ROOT}"
-
-echo "📂 Snapshotting assets to build directory..."
-cp -rp ${PROJECT_ROOT}/nml ${AIESDA_INSTALLED_ROOT}/
-cp -rp ${PROJECT_ROOT}/yaml ${AIESDA_INSTALLED_ROOT}/
-cp -rp ${PROJECT_ROOT}/jobs ${AIESDA_INSTALLED_ROOT}/
-###########################################################
-
-# 1. Check if environment-modules is installed
-if ! dpkg -s environment-modules >/dev/null 2>&1; then
-	echo "📦 Installing environment-modules..."
-	sudo apt update && sudo apt install environment-modules -y
-	source /usr/share/modules/init/bash
-	echo "source /usr/share/modules/init/bash" >> ~/.bashrc
-	echo "module use ~/modulefiles" >> ~/.bashrc
-	source ~/.bashrc
-else
-    echo "✅ environment-modules is already installed."
-fi
-
-sudo apt update && sudo apt install environment-modules -y
-
-# --- 4. Generate Environment Module ---
 mkdir -p $(dirname "${MODULE_FILE}")
 cat << EOF > "${MODULE_FILE}"
 #%Module1.0
-## AIESDA Environment Module v${VERSION}
-
-# Dependencies (Example: Loading the JEDI stack available at NCMRWF)
-if { [is-loaded jedi] == 0 } {
-    module load jedi/1.5.0
-}
-
 set version      ${VERSION}
 set aiesda_root  ${AIESDA_INSTALLED_ROOT}
-
 module-whatis    "AIESDA Framework v${VERSION}"
-
 # Environment Variables
 setenv           AIESDA_VERSION  ${VERSION}
-setenv           AIESDA_ROOT     \$aiesda_root
-setenv           AIESDA_NML      \$aiesda_root/nml
-setenv          AIESDA_YAML     \$aiesda_root/yaml
-
-# Logic Access
-prepend-path     PYTHONPATH      \$aiesda_root/pylib
-
-# Script Access (Versioned)
-prepend-path     PATH            \$aiesda_root/jobs
+setenv		 AIESDA_ROOT	 \$aiesda_root/lib/aiesda
+setenv           AIESDA_NML      \$aiesda_root/lib/aiesda/nml
+setenv           AIESDA_YAML     \$aiesda_root/lib/aiesda/yaml
+# Prepend paths
+prepend-path     PYTHONPATH      \$aiesda_root/lib/aiesda/pylib
+prepend-path     PYTHONPATH      \$aiesda_root/lib/aiesda/pydic
+prepend-path     PATH            \$aiesda_root/lib/aiesda/scripts
+prepend-path     PATH            \$aiesda_root/lib/aiesda/jobs
 EOF
+
 
 echo "------------------------------------------------------------"
 echo "✅ Installation Complete!"
 echo "   Module: ${PROJECT_NAME}/${VERSION}"
-echo "   All assets (nml, yaml, scripts) are now in the build path."
 echo "------------------------------------------------------------"
+
+
+if { [is-loaded jedi] == 0 } {
+    module load jedi/1.5.0
+}
 
 ###########################################################
 
