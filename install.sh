@@ -130,7 +130,6 @@ echo "🏗️  Building JEDI-Enabled Docker Image..."
     cat << 'EOF_DOCKER' > Dockerfile
 FROM jcsda/docker-gnu-openmpi-dev:latest
 USER root
-# Install pip and python dependencies
 RUN apt-get update && apt-get install -y python3-pip && rm -rf /var/lib/apt/lists/*
 WORKDIR /home/aiesda
 COPY requirement.txt .
@@ -139,13 +138,18 @@ ENV PYTHONPATH="/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:\${P
 ENV PATH="/home/aiesda/lib/aiesda/scripts:/home/aiesda/lib/aiesda/jobs:\${PATH}"
 EOF_DOCKER
 
+    # Build with the specific version tag
     docker build -t aiesda_jedi:${VERSION} .
-
     
+    # ALSO tag it as 'latest' so the alias is always "future-proof"
+    docker tag aiesda_jedi:${VERSION} aiesda_jedi:latest
+
+    # Add the alias if it doesn't exist
     if ! grep -q "aida-run" ~/.bashrc; then
         echo "alias aida-run='docker run -it --rm -v \$(pwd):/home/aiesda aiesda_jedi:latest'" >> ~/.bashrc
         echo "✅ Created 'aida-run' alias."
     fi
+    
 fi
 ###########################################################
 
