@@ -132,6 +132,8 @@ FROM jcsda/docker-gnu-openmpi-dev:latest
 USER root
 # Install pip and python dependencies
 RUN apt-get update && apt-get install -y python3-pip && rm -rf /var/lib/apt/lists/*
+# Ensure we have the latest pip for Python 3.12 compatibility
+RUN python3 -m pip install --upgrade pip --break-system-packages
 WORKDIR /home/aiesda
 COPY requirement.txt .
 RUN pip3 install --no-cache-dir -r requirement.txt --break-system-packages
