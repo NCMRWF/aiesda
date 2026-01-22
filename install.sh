@@ -10,7 +10,12 @@ REQUIREMENTS="${PROJECT_ROOT}/requirement.txt"
 AIESDA_INSTALLED_ROOT="${BUILD_DIR}"
 ###########################################################
 
-
+# --- 1. Pre-flight Checks (WSL Detection) ---
+IS_WSL=false
+if grep -qi "microsoft" /proc/version 2>/dev/null || grep -qi "wsl" /proc/sys/kernel/osrelease 2>/dev/null; then
+    IS_WSL=true
+    echo "💻 WSL Detected."
+fi
 
 ###########################################################
 
@@ -71,34 +76,36 @@ for block in "${COMPLEX_BLOCKS[@]}"; do
 done
 ###########################################################
 
-# --- 4. WSL/Laptop Docker Fallback ---
+# --- 4. Complex Blocks Check ---
+DA_MISSING=0
+for block in "${COMPLEX_BLOCKS[@]}"; do
+    echo "🔍 Checking complex block: [$block]..."
+    PKGS=$(get_req_block "$block")
+    for pkg in $PKGS; do
+        lib=$(echo "$pkg" | sed 's/py//' | cut -d'=' -f1 | cut -d'>' -f1 | tr -d '[:space:]')
+        if ! python3 -c "import $lib" &>/dev/null; then
+            echo "❌ $lib not found."
+            DA_MISSING=1
+        fi
+    done
+done
 
-# --- Pre-flight Check: Docker for JEDI ---
-# Only run this if we are in WSL and JEDI is missing natively
-if [ "$IS_WSL" = true ] && [ "$DA_MISSING" -eq 1 ]; then
-    echo "🐳 JEDI Bridge: Configuring Docker environment for AIESDA..."
-    
-    # 1. Verify Docker is shared with WSL
-    if ! docker ps &>/dev/null; then
-        echo "❌ Docker check failed! Ensure Docker Desktop is running"
-        echo "   and 'WSL Integration' is enabled for this Ubuntu distro."
-        exit 1
-    fi
+###########################################################
 
-    # 2. Build the image (using the JEDI base)
-    docker build -t aiesda_jedi:latest .
-
-    # 3. Add the alias to .bashrc for future sessions
-    if ! grep -q "aida-run" ~/.bashrc; then
-        echo "alias aida-run='docker run -it --rm -v \$(pwd):/home/aiesda aiesda_jedi:latest'" >> ~/.bashrc
-        echo "✅ Created 'aida-run' alias. Use this to run JEDI tasks."
-    fi
-    echo "✅ Docker detected and running."
-fi
-
+# --- 5. Docker Fallback (Merged & Cleaned) ---
 if [ "$DA_MISSING" -eq 1 ]; then
-    echo "🐳 Complex libraries missing. Building Docker Fallback..."
+    echo "🐳 JEDI/Complex libraries missing."
+    
+    if [ "$IS_WSL" = true ]; then
+        echo "🔍 Checking Docker Desktop integration..."
+        if ! docker ps &>/dev/null; then
+            echo "❌ Docker check failed! Ensure Docker Desktop is running and WSL Integration is enabled."
+            exit 1
+        fi
+    fi
+
     if command -v docker &>/dev/null; then
+        echo "🏗️ Building JEDI-Enabled Docker Fallback..."
         cat << 'EOF_DOCKER' > Dockerfile
 FROM jcsda/docker-gnu-openmpi-dev:latest
 WORKDIR /home/aiesda
@@ -107,13 +114,23 @@ RUN pip3 install --no-cache-dir -r requirement.txt --break-system-packages
 ENV PYTHONPATH="/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:${PYTHONPATH}"
 ENV PATH="/home/aiesda/lib/aiesda/scripts:/home/aiesda/lib/aiesda/jobs:${PATH}"
 EOF_DOCKER
-        docker build -t aiesda_da:latest .
-        ! grep -q "aida-run" ~/.bashrc && echo "alias aida-run='docker run -it --rm -v \$(pwd):/home/aiesda aiesda_da:latest'" >> ~/.bashrc
+
+        docker build -t aiesda_jedi:latest .
+        
+        # Create the alias if it doesn't exist
+        if ! grep -q "aida-run" ~/.bashrc; then
+            echo "alias aida-run='docker run -it --rm -v \$(pwd):/home/aiesda aiesda_jedi:latest'" >> ~/.bashrc
+            echo "✅ Created 'aida-run' alias. Run 'source ~/.bashrc' after installation."
+        fi
+    else
+        echo "⚠️  Warning: JEDI is missing and Docker is not installed. DA components will not work."
     fi
 fi
+
+
 ###########################################################
 
-# --- 5. Build and Module Generation ---
+# --- 6. Build and Module Generation ---
 echo "🏗️ Building Python package..."
 rm -rf "${BUILD_DIR}"
 python3 setup.py build --build-base "${BUILD_DIR}"
