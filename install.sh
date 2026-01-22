@@ -164,15 +164,16 @@ ENV PATH="/usr/bin:/usr/local/bin:\${PATH}"
 WORKDIR /home/aiesda
 COPY requirement.txt .
 
-# Install the AI and Data Stack
-RUN python3 -m pip install --no-cache-dir -r requirement.txt --break-system-packages
+# 3. Use absolute path for pip install
+RUN /usr/bin/python3 -m pip install --no-cache-dir -r requirement.txt --break-system-packages
 
-# Set Paths: 1. Your AIESDA libs, 2. The internal JEDI python bindings
+# 4. Set Paths: 1. Your AIESDA libs, 2. The internal JEDI python bindings
 ENV PYTHONPATH="/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:/usr/local/lib/python3.12/dist-packages:/usr/local/lib:\${PYTHONPATH}"
 ENV PATH="/home/aiesda/lib/aiesda/scripts:/home/aiesda/lib/aiesda/jobs:\${PATH}"
 
-# Verification check during build
-RUN python3 -c "import ufo; print('✅ JEDI UFO found inside container')"
+# 5. Verification check during build
+# Use absolute path for the final verification
+RUN /usr/bin/python3 -c "import ufo; print('✅ JEDI UFO found inside container')"
 EOF_DOCKER
 
         docker build -t aiesda_jedi:${VERSION} -t aiesda_jedi:latest .
