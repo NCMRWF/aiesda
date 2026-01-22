@@ -159,6 +159,9 @@ if [ "$DA_MISSING" -eq 1 ] && [ "$IS_WSL" = true ]; then
 FROM jcsda/docker-gnu-openmpi-dev:latest
 USER root
 
+# Cache buster to force path re-evaluation
+RUN echo "Build Date: $(date)" > /build_info.txt
+
 # Check if python3 exists before trying to use it or install it
 RUN if ! command -v python3 >/dev/null 2>&1; then \
         apt-get update && apt-get install -y python3 python3-pip libeccodes-dev; \
