@@ -126,9 +126,12 @@ if [ "$DA_MISSING" -eq 1 ]; then
 
     echo "✅ Docker is ready. "
 
-    echo "🏗️  Building JEDI-Enabled Docker Image..."
+echo "🏗️  Building JEDI-Enabled Docker Image..."
     cat << 'EOF_DOCKER' > Dockerfile
 FROM jcsda/docker-gnu-openmpi-dev:latest
+USER root
+# Install pip and python dependencies
+RUN apt-get update && apt-get install -y python3-pip && rm -rf /var/lib/apt/lists/*
 WORKDIR /home/aiesda
 COPY requirement.txt .
 RUN pip3 install --no-cache-dir -r requirement.txt --break-system-packages
@@ -136,7 +139,8 @@ ENV PYTHONPATH="/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:\${P
 ENV PATH="/home/aiesda/lib/aiesda/scripts:/home/aiesda/lib/aiesda/jobs:\${PATH}"
 EOF_DOCKER
 
-    docker build -t aiesda_jedi:latest .
+    docker build -t aiesda_jedi:${VERSION} .
+
     
     if ! grep -q "aida-run" ~/.bashrc; then
         echo "alias aida-run='docker run -it --rm -v \$(pwd):/home/aiesda aiesda_jedi:latest'" >> ~/.bashrc
