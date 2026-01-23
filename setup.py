@@ -13,7 +13,6 @@ setup(
 
     # Mapping namespaces to physical directories
     package_dir={
-        "aiesda": "pylib",          # This makes aiesda/aidaconf.py accessible
         "aiesda.pylib": "pylib",
         "aiesda.pydic": "pydic",
         "aiesda.scripts": "scripts",
