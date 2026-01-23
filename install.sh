@@ -173,10 +173,9 @@ RUN if ! command -v python3 >/dev/null 2>&1; then \
 RUN apt-get update && apt-get install -y python3-pip libeccodes-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# 2. SMART PATH SETUP
-# We add both the system site-packages AND the AIESDA folders to the path.
-# We use a wildcard (*) for the python version to make it version-agnostic.
-ENV PYTHONPATH="/usr/local/lib/python3.*/dist-packages:/usr/local/lib:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic"
+# 2. SET ROBUST PATHS
+# Using a wildcard (*) allows Python to find site-packages in 3.10, 3.11, or 3.12
+ENV PYTHONPATH="/usr/local/lib/python3.*/dist-packages:/usr/local/lib:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:${PYTHONPATH}"
 ENV LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH}"
 ENV PATH="/usr/bin:/usr/local/bin:${PATH}"
 
