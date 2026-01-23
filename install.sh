@@ -176,34 +176,24 @@ RUN apt-get update && apt-get install -y build-essential python3-dev
 RUN apt-get update && apt-get install -y python3-pip libeccodes-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# 3. DISCOVER AND INJECT PATH (Internal to Container)
-# We use a unique marker 'AIESDA_INTERNAL_PATHS' to ensure idempotency
+# 3 & 4. DISCOVER AND SET PATHS
+# We find the path and set it as an ENV so it's available to ALL subsequent RUN commands
 RUN JEDI_PATH=$(find /usr/local -name "ufo" -type d -path "*/dist-packages/*" | head -n 1 | sed 's/\/ufo//') && \
-    MARKER="AIESDA_INTERNAL_PATHS" && \
-    if ! grep -q "$MARKER" /etc/bash.bashrc; then \
-        echo -e "\n# >>> $MARKER >>>\nexport PYTHONPATH=\$JEDI_PATH:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:\$PYTHONPATH\n# <<< $MARKER <<<" >> /etc/bash.bashrc; \
-    fi
+    echo "export PYTHONPATH=$JEDI_PATH:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:\$PYTHONPATH" >> /etc/bash.bashrc
 
-# 4. SET ROBUST PATHS
-# Using a wildcard (*) allows Python to find site-packages in 3.10, 3.11, or 3.12
-# Inside your Dockerfile generation block:
-# We use a wildcard to capture any python 3.x version present in the JCSDA image
-ENV PYTHONPATH="/usr/local/bundle/install/lib/python3.*/dist-packages:/usr/local/lib/python3.*/dist-packages:/app:/usr/local/lib:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:\${PYTHONPATH}"
-ENV LD_LIBRARY_PATH="/usr/local/lib:\${LD_LIBRARY_PATH}"
-ENV PATH="/usr/bin:/usr/local/bin:\${PATH}"
+# IMPORTANT: We must set the ENV without wildcards for the build process to work.
+# We'll use a trick to set PYTHONPATH dynamically for the rest of the build.
+ENV PYTHONPATH="/usr/local/bundle/install/lib/python3.10/dist-packages:/usr/local/lib/python3.10/dist-packages:/usr/local/bundle/install/lib/python3.12/dist-packages:/usr/local/lib/python3.12/dist-packages:/app"
 
+# 5. Install Python Stack
 WORKDIR /home/aiesda
 COPY requirement.txt .
+RUN python3 -m pip install --no-cache-dir -r requirement.txt --break-system-packages
 
-# 5. Install Python Stack with extra retries for spotty connections
-RUN python3 -m pip install \
-    --no-cache-dir \
-    --retries 10 \
-    --timeout 60 \
-    -r requirement.txt --break-system-packages
+# 6. Verification check (Discover path on the fly for the test)
+RUN export PYTHONPATH=$(find /usr/local -name "ufo" -type d -path "*/dist-packages/*" | head -n 1 | sed 's/\/ufo//'):$PYTHONPATH && \
+    python3 -c "import ufo; print('✅ JEDI UFO found inside container')"
 
-# 6. Verification check during build
-RUN python3 -c "import sys; print('Python Path:', sys.path); import ufo; print('✅ JEDI UFO found inside container')"
 EOF_DOCKER
 
         docker build --no-cache -t aiesda_jedi:${VERSION} -t aiesda_jedi:latest \
