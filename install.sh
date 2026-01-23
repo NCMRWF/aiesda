@@ -174,6 +174,12 @@ RUN apt-get update && apt-get install -y build-essential python3-dev
 RUN apt-get update && apt-get install -y python3-pip libeccodes-dev && \
     rm -rf /var/lib/apt/lists/*
 
+# 2. BRUTE-FORCE PATH DISCOVERY
+# We search for where 'ufo' is located and add that parent directory to PYTHONPATH.
+# We also use \$ to ensure Docker handles the variables, not the host shell.
+RUN JEDI_PATH=$(find /usr/local -name "ufo" -type d -path "*/dist-packages/*" | head -n 1 | sed 's/\/ufo//') && \
+    echo "export PYTHONPATH=\$JEDI_PATH:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:\$PYTHONPATH" >> /etc/bash.bashrc
+
 # 2. SET ROBUST PATHS
 # Using a wildcard (*) allows Python to find site-packages in 3.10, 3.11, or 3.12
 ENV PYTHONPATH="/app:/usr/local/lib/python3.*/dist-packages:/usr/local/lib:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:${PYTHONPATH}"
