@@ -277,7 +277,7 @@ echo "   source ~/.bashrc"
 echo ""
 echo "🚀 To test the JEDI-AIESDA Bridge, run:"
 # We use backslashes here to ensure the quotes are printed correctly in the terminal
-echo "   aida-run python3 -c \"import ufo; import aidaconf; print('🚀 JEDI-AIESDA Bridge is Online!')\""
+echo "   aida-run python3 -c \"import ufo; import aidaconf; print('🚀 JEDI-AIESDA Bridge is Online')\""
 echo "###########################################################"
 ###########################################################
 exit 0
