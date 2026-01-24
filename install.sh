@@ -78,11 +78,13 @@ for block in "${NATIVE_BLOCKS[@]}"; do
 done
 ###########################################################
 
-# On WSL, we assume we need Docker (DA_MISSING=1)
-# On HPC, we will flip this to 0 if native libraries are found
-DA_MISSING=1
+# --- 6. Complex Block Verification ---
+DA_MISSING=0
 
-if [ "$IS_WSL" = false ]; then
+if [ "$IS_WSL" = true ]; then
+    # WSL always defaults to needing the Docker JEDI bridge
+    DA_MISSING=1
+else
     echo "🔍 Checking native DA components (HPC Mode)..."
     DA_FOUND_COUNT=0
     TOTAL_DA_PKGS=0
@@ -91,6 +93,7 @@ if [ "$IS_WSL" = false ]; then
         PKGS=$(get_req_block "$block")
         for pkg in $PKGS; do
             ((TOTAL_DA_PKGS++))
+            # Clean package name to get the importable module name
             lib=$(echo "$pkg" | sed 's/py//' | cut -d'=' -f1 | cut -d'>' -f1 | tr -d '[:space:]')
             if python3 -c "import $lib" &>/dev/null; then
                 ((DA_FOUND_COUNT++))
@@ -98,18 +101,24 @@ if [ "$IS_WSL" = false ]; then
         done
     done
 
-    # If we found all packages natively, we don't need Docker
-    if [ "$TOTAL_DA_PKGS" -gt 0 ] && [ "$DA_FOUND_COUNT" -eq "$TOTAL_DA_PKGS" ]; then
-        echo "✅ All DA components found natively."
-        DA_MISSING=0
-    fi
+    # Calculate how many are missing. If > 0, we need the container fallback.
+    DA_MISSING=$((TOTAL_DA_PKGS - DA_FOUND_COUNT))
 fi
 
+###########################################################
 
-# --- 6. Complex Block Verification ---
 # --- 7. Docker Fallback Logic ---
-${PROJECT_ROOT}/jobs/jedi_docker_build.sh
+if [ "$DA_MISSING" -gt 0 ]; then
+    echo "🐳 Missing $DA_MISSING DA components. Initializing Docker Build Job..."
+    
+    # Ensure the script is executable and run it
+    chmod +x "${PROJECT_ROOT}/jobs/jedi_docker_build.sh"
+    bash "${PROJECT_ROOT}/jobs/jedi_docker_build.sh" "$VERSION"
+else
+    echo "✅ No Docker fallback required."
+fi
 
+###########################################################
 # --- 8. Build & Module Generation ---
 echo "🏗️  Finalizing AIESDA Build..."
 rm -rf "${BUILD_DIR}"
