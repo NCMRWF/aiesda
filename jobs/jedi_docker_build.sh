@@ -7,10 +7,11 @@
 SELF=$(realpath "${0}")
 HOMEDIR=$(cd "$(dirname "$(realpath "$0")")/.." && pwd)
 export HOMEDIR
-
-VERSION=${VERSION:-"dev"}
-BUILD_WORKSPACE="${HOME}/build/docker_build_tmp"
 PROJECT_ROOT="$HOMEDIR" # Fixed syntax
+REQUIREMENTS="$PROJECT_ROOT/requirements.txt"
+JEDI_VERSION=${VERSION:-"dev"}
+BUILD_WORKSPACE="${HOME}/build/docker_build_tmp"
+
 
 # --- 7. Docker Fallback Logic ---
 if [ "$DA_MISSING" -eq 1 ] && [ "$IS_WSL" = true ]; then
@@ -44,12 +45,12 @@ if [ "$DA_MISSING" -eq 1 ] && [ "$IS_WSL" = true ]; then
     else
         echo "🏗️  Starting JEDI-Enabled Docker Build (v${VERSION})..."
         mkdir -p "$BUILD_WORKSPACE"
-
+        
         # Copy requirements using the absolute path we calculated
-        if [ -f "$PROJECT_ROOT/requirement.txt" ]; then
-            cp "$PROJECT_ROOT/requirement.txt" "$BUILD_WORKSPACE/"
+        if [ -f "${REQUREMENTS}" ]; then
+            cp "${REQUREMENTS}" "$BUILD_WORKSPACE/"
         else
-            echo "❌ ERROR: requirement.txt not found at $PROJECT_ROOT"
+            echo "❌ ERROR: ${REQUREMENTS} not found."
             exit 1
         fi
 
@@ -116,18 +117,19 @@ fi
 fi
 
 # --- 8. Module Generation ---
-MODULE_FILE="${HOME}/modulefiles/jedi_${VERSION}"
-mkdir -p $(dirname "${MODULE_FILE}")
+MODULE_PATH="${HOME}/modulefiles"
+JEDI_MODULE_FILE="${MODULE_PATH}/jedi/${JEDI_VERSION}"
+mkdir -p "${MODULE_PATH}"
 
-cat << EOF_MODULE > "${MODULE_FILE}"
+cat << EOF_MODULE > "${JEDI_MODULE_FILE}"
 #%Module1.0
 ## JEDI v${VERSION} (AIESDA Bridge)
-set version      ${VERSION}
+set version      ${JEDI_VERSION}
 set jedi_root    ${BUILD_DIR}
 
 # Metadata
 setenv           JEDI_VERSION  \$version
-setenv           JEDI_ROOT     \$jedi_root/lib/aiesda
+setenv           JEDI_ROOT     \$jedi_root/lib/jedi
 
 # Docker Wrapper Path (for WSL/Laptop)
 # This prepends the bin directory only if it exists
@@ -143,9 +145,9 @@ echo "###########################################################"
 echo "✅ Installation Complete!"
 echo ""
 echo "👉 To activate AIESDA in this session, run:"
-echo "   source ~/.bashrc"
+echo "   module load ${JEDI_MODULE_FILE}
 echo ""
 echo "🚀 To test the JEDI-AIESDA Bridge, run:"
 # We use backslashes here to ensure the quotes are printed correctly in the terminal
-echo "   aida-run python3 -c \"import ufo; import aidaconf; print('🚀 JEDI-AIESDA Bridge is Online')\""
+echo "   jedi-run python3 -c \"import ufo; import aidaconf; print('🚀 JEDI-AIESDA Bridge is Online')\""
 echo "###########################################################"
