@@ -3,37 +3,39 @@
 # AIESDA JEDI Docker Builder (WSL/Laptop Integration)
 # ==============================================================================
 
-# 1. Path & Environment Setup
+# --- 1. Path & Environment Setup ---
 SELF=$(realpath "${0}")
 HOMEDIR=$(cd "$(dirname "$(realpath "$0")")/.." && pwd)
-export HOMEDIR
-PROJECT_ROOT="$HOMEDIR" # Fixed syntax
+PROJECT_ROOT="$HOMEDIR"
 MODULE_PATH="${HOME}/modulefiles"
+
+# Ensure VERSION and PROJECT_NAME are set (inherited or defaulted)
+VERSION=${VERSION:-"dev"}
+PROJECT_NAME=${PROJECT_NAME:-"aiesda"}
 BUILD_DIR="${HOME}/build/${PROJECT_NAME}_build_${VERSION}"
 BUILD_WORKSPACE="${HOME}/build/docker_build_tmp"
 
+# Corrected spelling for variable consistency
 REQUIREMENTS="$PROJECT_ROOT/requirements.txt"
+
 # Extract JEDI version from requirements.txt
-# Looks for the line starting with 'jedi==' or 'jedi>=' within the file
 JEDI_VERSION=$(grep -iE "^jedi[>=]*" "$REQUIREMENTS" | head -n 1 | sed 's/[^0-9.]*//g')
-# Fallback if not found
 JEDI_VERSION=${JEDI_VERSION:-"latest"}
 echo "🔍 Detected JEDI Target Version: ${JEDI_VERSION}"
+
+# Define Module File Location
 JEDI_MODULE_FILE="${MODULE_PATH}/jedi/${JEDI_VERSION}"
 
-DA_MISSING=1
-
-# --- 7. Docker Fallback Logic ---
-if [ "$DA_MISSING" -eq 1 ] && [ "$IS_WSL" = true ]; then
+# --- 2. Docker Fallback Logic ---
+# Note: Ensure IS_WSL is passed or detected here
+if [ "$IS_WSL" = true ]; then
     echo "🐳 JEDI components missing. Checking Docker..."
 
-    # 1. Pre-flight Check: Docker Command
     if ! command -v docker &>/dev/null; then
         echo "❌ ERROR: Docker command not found. Please install Docker Desktop."
         exit 1
     fi
 
-    # 2. Ensure Docker is running
     if ! docker ps &>/dev/null; then
         echo "🐋 Starting Docker Desktop..."
         "/mnt/c/Program Files/Docker/Docker/Docker Desktop.exe" &
@@ -50,114 +52,80 @@ if [ "$DA_MISSING" -eq 1 ] && [ "$IS_WSL" = true ]; then
     fi
 
     # 3. Build Logic
-    if docker image inspect aiesda_jedi:${VERSION} &>/dev/null; then
-        echo "✅ Docker image aiesda_jedi:${VERSION} already exists."
+    if docker image inspect aiesda_jedi:${JEDI_VERSION} &>/dev/null; then
+        echo "✅ Docker image aiesda_jedi:${JEDI_VERSION} already exists."
     else
-        echo "🏗️  Starting JEDI-Enabled Docker Build (v${VERSION})..."
+        echo "🏗️  Starting JEDI-Enabled Docker Build (v${JEDI_VERSION})..."
         mkdir -p "$BUILD_WORKSPACE"
         
-        # Copy requirements using the absolute path we calculated
-        if [ -f "${REQUREMENTS}" ]; then
-            cp "${REQUREMENTS}" "$BUILD_WORKSPACE/"
+        if [ -f "${REQUIREMENTS}" ]; then
+            cp "${REQUIREMENTS}" "$BUILD_WORKSPACE/requirement.txt"
         else
-            echo "❌ ERROR: ${REQUREMENTS} not found."
+            echo "❌ ERROR: ${REQUIREMENTS} not found."
             exit 1
         fi
 
-        # Generate the Dockerfile
-        
         cat << 'EOF_DOCKER' > "$BUILD_WORKSPACE/Dockerfile"
 FROM jcsda/docker-gnu-openmpi-dev:latest
 USER root
-
-RUN apt-get update && apt-get install -y \
-    python3-pip libeccodes-dev build-essential python3-dev \
-    && rm -rf /var/lib/apt/lists/*
-
+RUN apt-get update && apt-get install -y python3-pip libeccodes-dev build-essential python3-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /home/aiesda
 COPY requirement.txt .
-
 RUN python3 -m pip install --no-cache-dir -r requirement.txt --break-system-packages
-
-# Path Discovery
+ENV PYTHONPATH="/usr/local/bundle/install/lib/python3.10/dist-packages:/usr/local/lib/python3.10/dist-packages:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic"
 RUN JEDI_BASE_DIR=$(find /usr/local -name "ufo" -type d | head -n 1) && \
-    if [ -n "$JEDI_BASE_DIR" ]; then \
-        JEDI_PATH=$(dirname "$JEDI_BASE_DIR"); \
-        echo "export PYTHONPATH=$JEDI_PATH:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:\$PYTHONPATH" >> /etc/bash.bashrc; \
-        echo "PYTHONPATH=$JEDI_PATH:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:\$PYTHONPATH" >> /etc/environment; \
-    fi
-
-ENV PYTHONPATH="/usr/local/bundle/install/lib/python3.10/dist-packages:/usr/local/lib/python3.10/dist-packages:/usr/local/bundle/install/lib/python3.12/dist-packages:/usr/local/lib/python3.12/dist-packages:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic"
-
-RUN JEDI_BASE_DIR=$(find /usr/local -name "ufo" -type d | head -n 1) && \
-    if [ -z "$JEDI_BASE_DIR" ]; then echo "❌ FAILED: ufo module not found"; exit 1; fi && \
     export JEDI_PATH=$(dirname "$JEDI_BASE_DIR") && \
     export PYTHONPATH="$JEDI_PATH:$PYTHONPATH" && \
     python3 -c "import ufo; print('✅ JEDI UFO found at:', ufo.__file__)"
 EOF_DOCKER
 
-        docker build --no-cache -t aiesda_jedi:${VERSION} -t aiesda_jedi:latest \
+        docker build --no-cache -t aiesda_jedi:${JEDI_VERSION} -t aiesda_jedi:latest \
                      -f "$BUILD_WORKSPACE/Dockerfile" "$BUILD_WORKSPACE"
 
         BUILD_STATUS=$?
         rm -rf "$BUILD_WORKSPACE"
-
-        if [ $BUILD_STATUS -ne 0 ]; then
-            echo "❌ Docker build failed."
-            exit 1
-        fi
-        echo "✅ Docker build successful: aiesda_jedi:${VERSION}"
+        [ $BUILD_STATUS -ne 0 ] && echo "❌ Docker build failed." && exit 1
     fi
 
-  # ... (After successful docker build) ...
-    
-    # 4. Create Wrapper Script instead of Alias
+    # 4. Create Wrapper Script
     AIESDA_BIN_DIR="${BUILD_DIR}/bin"
     mkdir -p "$AIESDA_BIN_DIR"
     
-    cat << EOF > "${AIESDA_BIN_DIR}/jedi-run"
+    cat << 'EOF' > "${AIESDA_BIN_DIR}/jedi-run"
 #!/bin/bash
 # AIESDA JEDI Docker Wrapper
-docker run -it --rm -v \$(pwd):/home/aiesda aiesda_jedi:latest "\$@"
+docker run -it --rm -v $(pwd):/home/aiesda aiesda_jedi:latest "$@"
 EOF
-
     chmod +x "${AIESDA_BIN_DIR}/jedi-run"
-    echo "✅ Created Docker wrapper at ${AIESDA_BIN_DIR}/jedi-run"
-fi
 fi
 
-# --- 8. Module Generation ---
-MODULE_PATH="${HOME}/modulefiles"
-JEDI_MODULE_FILE="${MODULE_PATH}/jedi/${JEDI_VERSION}"
-mkdir -p "${MODULE_PATH}"
+# --- 3. Module Generation ---
+mkdir -p "$(dirname "${JEDI_MODULE_FILE}")"
 
 cat << EOF_MODULE > "${JEDI_MODULE_FILE}"
 #%Module1.0
-## JEDI v${VERSION} (AIESDA Bridge)
+## JEDI v${JEDI_VERSION} (AIESDA Bridge)
 set version      ${JEDI_VERSION}
 set jedi_root    ${BUILD_DIR}
 
-# Metadata
 setenv           JEDI_VERSION  \$version
-setenv           JEDI_ROOT     \$jedi_root/lib/jedi
+setenv           JEDI_ROOT     \$jedi_root
 
-# Docker Wrapper Path (for WSL/Laptop)
-# This prepends the bin directory only if it exists
 if { [file isdirectory \$jedi_root/bin] } {
     prepend-path PATH            \$jedi_root/bin
 }
 
-help "This module provides the 'jedi-run' command to execute JEDI tasks via Docker on WSL."
+help "This module provides 'jedi-run' to execute JEDI tasks via Docker on WSL."
 EOF_MODULE
 
-# --- 10. Testing Environment & Instructions ---
+# --- 4. Testing Environment & Instructions ---
 echo "###########################################################"
-echo "✅ Installation Complete!"
+echo "✅ JEDI Bridge Installation Complete!"
 echo ""
-echo "👉 To activate AIESDA in this session, run:"
-echo "   module load ${JEDI_MODULE_FILE}
+echo "👉 To activate JEDI in this session, run:"
+echo "   module use ${MODULE_PATH}"
+echo "   module load jedi/${JEDI_VERSION}"
 echo ""
-echo "🚀 To test the JEDI-AIESDA Bridge, run:"
-# We use backslashes here to ensure the quotes are printed correctly in the terminal
-echo "   jedi-run python3 -c \"import ufo; import aidaconf; print('🚀 JEDI-AIESDA Bridge is Online')\""
+echo "🚀 To test the bridge, run:"
+echo "   jedi-run python3 -c \"import ufo; print('🚀 JEDI-AIESDA Bridge is Online')\""
 echo "###########################################################"
