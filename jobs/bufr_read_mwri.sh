@@ -12,9 +12,11 @@ module load gnu/matplotlib/2.2.2
 module load gnu/pythonmodules/2.7.9/gnu/basemap/1.1.0
 module load gnu/python_eccodes/eccodes-2.13.1_utility
 #################################################################################
-
+# Finds the directory containing the script, then goes up one level
 SELF=$(realpath ${0})
-export HOMEDIR=${SELF%/jobs/*}
+HOMEDIR=$(cd "$(dirname "$(realpath "$0")")/.." && pwd)
+export HOMEDIR
+
 obsname="mwri"
 if [ ${USER} == "umprod" ]; then 
 export QUEUE_MAMU="serial"

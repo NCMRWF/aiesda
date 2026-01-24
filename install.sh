@@ -79,11 +79,12 @@ done
 ###########################################################
 
 # --- 6. Complex Block Verification ---
-# On WSL, we assume we need Docker (DA_MISSING=1)
-# On HPC, we will flip this to 0 if native libraries are found
-DA_MISSING=1
+DA_MISSING=0
 
-if [ "$IS_WSL" = false ]; then
+if [ "$IS_WSL" = true ]; then
+    # WSL always defaults to needing the Docker JEDI bridge
+    DA_MISSING=1
+else
     echo "🔍 Checking native DA components (HPC Mode)..."
     DA_FOUND_COUNT=0
     TOTAL_DA_PKGS=0
@@ -92,6 +93,7 @@ if [ "$IS_WSL" = false ]; then
         PKGS=$(get_req_block "$block")
         for pkg in $PKGS; do
             ((TOTAL_DA_PKGS++))
+            # Clean package name to get the importable module name
             lib=$(echo "$pkg" | sed 's/py//' | cut -d'=' -f1 | cut -d'>' -f1 | tr -d '[:space:]')
             if python3 -c "import $lib" &>/dev/null; then
                 ((DA_FOUND_COUNT++))
@@ -99,124 +101,24 @@ if [ "$IS_WSL" = false ]; then
         done
     done
 
-    # If we found all packages natively, we don't need Docker
-    if [ "$TOTAL_DA_PKGS" -gt 0 ] && [ "$DA_FOUND_COUNT" -eq "$TOTAL_DA_PKGS" ]; then
-        echo "✅ All DA components found natively."
-        DA_MISSING=0
-    fi
+    # Calculate how many are missing. If > 0, we need the container fallback.
+    DA_MISSING=$((TOTAL_DA_PKGS - DA_FOUND_COUNT))
 fi
 
 ###########################################################
 
 # --- 7. Docker Fallback Logic ---
-if [ "$DA_MISSING" -eq 1 ] && [ "$IS_WSL" = true ]; then
-    echo "🐳 JEDI components missing. Checking Docker..."
-
-    # 1. Check if Docker is installed
-    if ! command -v docker &>/dev/null; then
-        echo "❌ ERROR: Docker command not found. Please install Docker Desktop on Windows."
-        exit 1
-    fi
-
-    # 2. Try to start Docker if it's not running
-    if ! docker ps &>/dev/null; then
-        echo "🐋 Docker is not running. Attempting to start Docker Desktop..."
-        # Launch the Windows executable from WSL
-        "/mnt/c/Program Files/Docker/Docker/Docker Desktop.exe" &
-        
-        echo "⏳ Waiting for Docker to initialize (this may take a minute)..."
-        # Wait up to 60 seconds for Docker to become responsive
-        COUNT=0
-        while ! docker ps &>/dev/null && [ $COUNT -lt 12 ]; do
-            sleep 5
-            ((COUNT++))
-            echo "   ...still waiting ($((COUNT * 5))s)..."
-        done
-    fi
-
-    # 3. Final verification of the connection
-    if ! docker ps &>/dev/null; then
-        echo "❌ ERROR: Docker Desktop failed to start or WSL Integration is disabled."
-        echo "👉 Please manually open Docker Desktop -> Settings -> Resources -> WSL Integration"
-        echo "   and ensure 'Ubuntu' is toggled ON."
-        exit 1
-    fi
-
-    echo "✅ Docker is ready. "
-
-# Check if the image already exists before building
-    if docker image inspect aiesda_jedi:${VERSION} &>/dev/null; then
-        echo "✅ Docker image aiesda_jedi:${VERSION} already exists. Skipping build."
-    else
-        echo "🏗️  Building JEDI-Enabled Docker Image..."
-        # Define a clean build workspace outside the repo
-        
-        mkdir -p "$BUILD_WORKSPACE"
-
-        # 1. Copy only the necessary requirement file to the workspace
-        cp requirement.txt "$BUILD_WORKSPACE/"
-
-# 2. Generate the Dockerfile directly in the build area
-cat << 'EOF_DOCKER' > "$BUILD_WORKSPACE/Dockerfile"
-FROM jcsda/docker-gnu-openmpi-dev:latest
-USER root
-
-# 1. System dependencies
-RUN apt-get update && apt-get install -y python3-pip libeccodes-dev build-essential python3-dev && rm -rf /var/lib/apt/lists/*
-
-# 2. Setup Working Directory
-WORKDIR /home/aiesda
-COPY requirement.txt .
-
-# 3. Install Python Stack
-RUN python3 -m pip install --no-cache-dir -r requirement.txt --break-system-packages
-
-# 4. DISCOVER AND INJECT PATHS
-# We find the 'ufo' directory and get its parent folder (dirname)
-RUN JEDI_BASE_DIR=$(find /usr/local -name "ufo" -type d | head -n 1) && \
-    if [ -n "$JEDI_BASE_DIR" ]; then \
-        JEDI_PATH=$(dirname "$JEDI_BASE_DIR"); \
-        echo "export PYTHONPATH=$JEDI_PATH:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:\$PYTHONPATH" >> /etc/bash.bashrc; \
-        echo "PYTHONPATH=$JEDI_PATH:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic:\$PYTHONPATH" >> /etc/environment; \
-    fi
-
-# 5. Robust Environment Setting
-ENV PYTHONPATH="/usr/local/bundle/install/lib/python3.10/dist-packages:/usr/local/lib/python3.10/dist-packages:/usr/local/bundle/install/lib/python3.12/dist-packages:/usr/local/lib/python3.12/dist-packages:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic"
-
-# 6. Verification check with Debugging
-RUN JEDI_BASE_DIR=$(find /usr/local -name "ufo" -type d | head -n 1) && \
-    if [ -z "$JEDI_BASE_DIR" ]; then echo "❌ ERROR: Could not find ufo directory anywhere in /usr/local"; exit 1; fi && \
-    export JEDI_PATH=$(dirname "$JEDI_BASE_DIR") && \
-    export PYTHONPATH="$JEDI_PATH:$PYTHONPATH" && \
-    python3 -c "import ufo; print('✅ JEDI UFO found at:', ufo.__file__)"
-EOF_DOCKER
-
-        docker build --no-cache -t aiesda_jedi:${VERSION} -t aiesda_jedi:latest \
-                     -f "$BUILD_WORKSPACE/Dockerfile" "$BUILD_WORKSPACE"
-        # Cleanup the temporary build workspace
-        rm -rf "$BUILD_WORKSPACE"
-    fi
-
-    # Define the unique identifier for your block
-    MARKER="AIESDA_JEDI_SETUP"
-
-    if ! grep -q "$MARKER" ~/.bashrc; then
-        echo "📝 Adding AIESDA configuration to ~/.bashrc..."
-        cat << EOF >> ~/.bashrc
-
-# >>> $MARKER >>>
-alias aida-run='docker run -it --rm -v \$(pwd):/home/aiesda aiesda_jedi:latest'
-
-# <<< $MARKER <<<
-EOF
-        echo "✅ Configuration added."
-    else
-        echo "ℹ️ AIESDA configuration already exists in ~/.bashrc, skipping."
-    fi
-
+if [ "$DA_MISSING" -gt 0 ]; then
+    echo "🐳 Missing $DA_MISSING DA components. Initializing Docker Build Job..."
+    
+    # Ensure the script is executable and run it
+    chmod +x "${PROJECT_ROOT}/jobs/jedi_docker_build.sh"
+    bash "${PROJECT_ROOT}/jobs/jedi_docker_build.sh" "$VERSION"
+else
+    echo "✅ No Docker fallback required."
 fi
-###########################################################
 
+###########################################################
 # --- 8. Build & Module Generation ---
 echo "🏗️  Finalizing AIESDA Build..."
 rm -rf "${BUILD_DIR}"
