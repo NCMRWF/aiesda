@@ -106,17 +106,27 @@ else
 fi
 
 ###########################################################
+# Extract JEDI version from requirements.txt
+# Looks for the line starting with 'jedi==' or 'jedi>=' within the file
+JEDI_VERSION=$(grep -iE "^jedi[>=]*" "$REQUIREMENTS" | head -n 1 | sed 's/[^0-9.]*//g')
+
+# Fallback if not found
+JEDI_VERSION=${JEDI_VERSION:-"latest"}
+
+echo "🔍 Detected JEDI Target Version: ${JEDI_VERSION}"
 
 # --- 7. Docker Fallback Logic ---
 if [ "$DA_MISSING" -gt 0 ]; then
-    echo "🐳 Missing $DA_MISSING DA components. Initializing Docker Build Job..."
+    echo "🐳 Missing $DA_MISSING DA components. Initializing JEDI v${JEDI_VERSION} Build..."
     
-    # Ensure the script is executable and run it
     chmod +x "${PROJECT_ROOT}/jobs/jedi_docker_build.sh"
-    bash "${PROJECT_ROOT}/jobs/jedi_docker_build.sh" "$VERSION"
+    # PASS JEDI_VERSION instead of AIESDA VERSION
+    bash "${PROJECT_ROOT}/jobs/jedi_docker_build.sh" "$JEDI_VERSION"
+
 else
     echo "✅ No Docker fallback required."
 fi
+
 
 ###########################################################
 # --- 8. Build & Module Generation ---
