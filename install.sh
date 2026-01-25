@@ -132,67 +132,89 @@ fi
 # --- 8. Build & Module Generation ---
 echo "🏗️  Finalizing AIESDA Build..."
 rm -rf "${BUILD_DIR}"
+# Build the package into the targeted build directory
 python3 setup.py build --build-base "${BUILD_DIR}"
 
+# Manually sync assets that setup.py might miss or that you want in specific subfolders
 AIESDA_INTERNAL_LIB="${BUILD_DIR}/lib/aiesda"
 mkdir -p "${AIESDA_INTERNAL_LIB}"
 for asset in nml yaml jobs scripts pydic pylib; do
     [ -d "${PROJECT_ROOT}/$asset" ] && cp -rp "${PROJECT_ROOT}/$asset" "${AIESDA_INTERNAL_LIB}/"
 done
 
+# Ensure VERSION file is in the build root so aiesda/__init__.py can find it
+cp "${PROJECT_ROOT}/VERSION" "${AIESDA_INTERNAL_LIB}/"
+
 mkdir -p $(dirname "${PKG_MODULE_FILE}")
 cat << EOF_MODULE > "${PKG_MODULE_FILE}"
 #%Module1.0
-## AIESDA v${VERSION}
-if { [is-loaded jedi] == 0 } { catch { module load jedi/1.5.0 } }
+## AIESDA v${VERSION} (Linked to JEDI ${JEDI_VERSION})
+
+# Dependency: Load the JEDI version found in requirements.txt
+if { [is-loaded jedi/${JEDI_VERSION}] == 0 } { 
+    catch { module load jedi/${JEDI_VERSION} } 
+}
+
 set version      ${VERSION}
 set aiesda_root  ${AIESDA_INSTALLED_ROOT}
+
 setenv           AIESDA_VERSION  \$version
 setenv           AIESDA_ROOT     \$aiesda_root/lib/aiesda
 setenv           AIESDA_NML      \$aiesda_root/lib/aiesda/nml
 setenv           AIESDA_YAML     \$aiesda_root/lib/aiesda/yaml
+
+# The main site-packages location for the build
+prepend-path     PYTHONPATH      \$aiesda_root/lib
+
+# Add asset subdirectories to pathing for safety
 prepend-path     PYTHONPATH      \$aiesda_root/lib/aiesda/pylib
 prepend-path     PYTHONPATH      \$aiesda_root/lib/aiesda/pydic
 prepend-path     PATH            \$aiesda_root/lib/aiesda/scripts
 prepend-path     PATH            \$aiesda_root/lib/aiesda/jobs
+
+# Add Docker wrapper bin if on WSL/Laptop mode
+if { [file isdirectory \$aiesda_root/bin] } {
+    prepend-path PATH            \$aiesda_root/bin
+}
 EOF_MODULE
-
-echo "------------------------------------------------------------"
-echo "✅ Installation Complete! Run 'source ~/.bashrc' to activate."
-echo "------------------------------------------------------------"
-
 
 ###########################################################
 
 # --- 9. Testing Environment ---
 echo "🧪 Running Post-Installation Tests..."
 (
-    # Initialize modules
-    [ -f /usr/share/modules/init/bash ] && source /usr/share/modules/init/bash
+    # Initialize modules if they aren't already
+    if [ -f /usr/share/modules/init/bash ]; then
+        source /usr/share/modules/init/bash
+    elif [ -f /etc/profile.d/modules.sh ]; then
+        source /etc/profile.d/modules.sh
+    fi
     
     if command -v module >/dev/null 2>&1; then
-        module use ${HOME}/modulefiles
+        module use "${MODULE_PATH}"
+        echo "🔄 Loading AIESDA v${VERSION}..."
+        module load "${PROJECT_NAME}/${VERSION}"
         
-        echo "🔄 Loading AIESDA and JEDI modules..."
-        module load ${PKG_MODULE_FILE}
-        module load ${JEDI_MODULE_FILE}
-
-        # New, cleaner test verifying both version and config
+        # Test 1: Core AIESDA Metadata
+        echo "🧐 Verifying AIESDA Version and Config..."
         python3 -c "import aiesda; print(f'✅ AIESDA v{aiesda.__version__} initialized with {aiesda.AIESDAConfig}')"
+        
+        # Test 2: Stack Integration
         if [ "$IS_WSL" = true ]; then
-            echo "📝 WSL Detection: Testing JEDI-Bridge..."
-            # Verify the wrapper from the 'jedi' module is active
+            echo "📝 WSL Detection: Testing JEDI-Bridge via jedi-run..."
             if command -v jedi-run >/dev/null 2>&1; then
-                jedi-run python3 -c "import ufo; import aidaconf; print('✅ Bridge Verified: JEDI + AIESDA are talking.')"
+                jedi-run python3 -c "import ufo; print('✅ Bridge Verified: JEDI container is reachable.')"
             else
-                echo "❌ ERROR: 'jedi-run' not found. Check if the jedi/${VERSION} module was created correctly."
+                echo "❌ ERROR: 'jedi-run' wrapper not found in PATH."
             fi
         else
-            echo "📝 HPC Detection: Testing Native Stack..."
-            python3 -c "import ufo; import aidaconf; print('✅ Native Verified: JEDI + AIESDA linked.')"
+            echo "📝 HPC Detection: Testing Native Stack Integration..."
+            python3 -c "import ufo; print('✅ Native Verified: JEDI modules linked.')"
         fi
     fi
 )
+
+###########################################################
 
 ###########################################################
 exit 0
@@ -200,3 +222,12 @@ exit 0
 ###########################################################
 ###		End of the file install.sh		                ###
 ###########################################################
+
+
+
+
+
+
+
+
+
