@@ -29,19 +29,17 @@ JEDI_MODULE_FILE="${MODULE_PATH}/jedi/${JEDI_VERSION}"
 echo "♻️  Wiping existing installation for v$VERSION..."
 bash remove.sh "$VERSION" >/dev/null 2>&1
 
-NATIVE_BLOCKS=(
-    "Numerical and Data Handling"
-    "Geospatial Visualization"
-    "AI and Deep Learning"
-    "Meteorological Specifics"
-    "Configuration and Logging Libraries"
-    "ECMWF Anemoi and Related Stack"
-)
+# Dynamically extract NATIVE_BLOCKS and COMPLEX_BLOCKS from requirements.txt
+if [ -f "$REQUIREMENTS" ]; then
+    # Extract the lines between the markers, remove the leading '# ', and evaluate them
+    eval "$(sed -n '/# >>> BASH_CONFIG_START >>>/,/# <<< BASH_CONFIG_END <<</p' "$REQUIREMENTS" | sed 's/^# //')"
+else
+    echo "❌ ERROR: requirements.txt not found!"
+    exit 1
+fi
 
-COMPLEX_BLOCKS=(
-    "NCAR Legacy Graphics and InOut"
-    "JCSDA JEDI and Related Stack"
-)
+# Verify the extraction worked
+echo "🔍 Loaded ${#NATIVE_BLOCKS[@]} Native Blocks and ${#COMPLEX_BLOCKS[@]} Complex Blocks."
 ###########################################################
 
 # --- 2. Pre-flight Checks (WSL & OS Detection) ---
