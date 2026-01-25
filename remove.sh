@@ -24,10 +24,15 @@ echo "🧹 Starting surgical cleanup for ${PROJECT_NAME} v${TARGET_VERSION}..."
 JEDI_IMAGE="${PROJECT_NAME}_jedi:${TARGET_VERSION}"
 JEDI_BUILD="${BUILD_ROOT}/jedi_build_${TARGET_VERSION}"
 
-echo ""
-echo "❓ JEDI Component Detected (v${TARGET_VERSION})"
-read -p "Do you also want to remove the associated JEDI Docker image and bridge? (y/N): " confirm_jedi
 
+# Check if script is running in an interactive shell (tty)
+if [[ -t 0 ]]; then
+    echo "❓ JEDI Component Detected (v${TARGET_VERSION})"
+    read -p "Do you also want to remove the associated JEDI Docker image and bridge? (y/N): " confirm_jedi
+else
+    # Default to NO if running via another script (like install.sh)
+    confirm_jedi="n"
+fi
 ############################################################################
 
 # 2. Interactive JEDI Cleanup
