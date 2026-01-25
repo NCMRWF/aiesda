@@ -26,7 +26,9 @@ cd aiesda
 ./install.sh
 
 ```
+# Build Package directory structure
 
+```
 aiesda_build_2026.1/
 
 ├── lib/
@@ -71,7 +73,7 @@ jedi_build_2026.1/
     
     └─── ...
     
-
+```
 ## 🚦 ***Quick Start***
 ```Python
 
