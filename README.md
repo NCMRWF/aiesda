@@ -27,7 +27,28 @@ cd aiesda
 
 ```
 
-
+aiesda_build_2026.1/
+├── lib/
+│   ├── aiesda/
+│   │   ├── __init__.py    (from setup.py build)
+│   │   ├── VERSION        (copied manually)
+│   │   ├── nml/           (synced assets)
+│   │   ├── yaml/          (synced assets)
+│   │   ├── pylib/         (synced assets)
+│   │   ├── pydic/
+│   │   ├── scripts/
+│   │   ├── jobs/
+│   │   ├── pallets/
+│   │   ├── docs/ 
+│   │   └── ...
+│   └── [site-packages]    (compiled python code)
+└───bin/
+    ├─── ...
+    └─── ...
+jedi_build_2026.1/
+└───bin/
+    ├─── ...
+    └─── ...
 
 ## 🚦 ***Quick Start***
 ```Python
