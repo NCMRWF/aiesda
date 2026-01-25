@@ -1,4 +1,30 @@
 from setuptools import setup, find_packages
+import os
+
+def parse_requirements(filename):
+    """
+    Parses requirements.txt for native Python dependencies.
+    Skips JEDI/DA components that are handled by Docker/HPC modules.
+    """
+    requirements = []
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            for line in f:
+                # Remove inline comments and whitespace
+                line = line.split('#')[0].strip()
+                
+                # Skip empty lines, block headers, or complex JEDI modules
+                if not line or "BLOCK" in line:
+                    continue
+                
+                # Exclude packages provided by JEDI stack (HPC/Docker)
+                # This prevents pip from trying to build C++ bindings from scratch
+                jedi_libs = ["ufo", "saber", "ioda", "oops", "vader"]
+                if any(lib in line.lower() for lib in jedi_libs):
+                    continue
+                    
+                requirements.append(line)
+    return requirements
 
 with open("VERSION", "r") as f:
     version = f.read().strip()
@@ -8,11 +34,15 @@ setup(
     version=version,
     description="Artificial Intelligence based Earth System Data Assimilation",
     author="gibies",
-    # Define the hierarchy
-    packages=["aiesda", "aiesda.pylib", "aiesda.pydic", "aiesda.scripts"],
+
+    # Identify the hierarchy using the find_packages to ensures all sub-packages
+    # such as ["aiesda", "aiesda.pylib", "aiesda.pydic", "aiesda.scripts"]  are accounted.
+    packages=find_packages(where=".") + ["aiesda"],
 
     # Mapping namespaces to physical directories
+    # Note: "." maps the base 'aiesda' to the current directory for package_data
     package_dir={
+        "aiesda": ".", 
         "aiesda.pylib": "pylib",
         "aiesda.pydic": "pydic",
         "aiesda.scripts": "scripts",
@@ -20,20 +50,20 @@ setup(
 
     # Ensuring configs are bundled into the versioned build
     package_data={
-        "aiesda": ["nml/*.nml", "yaml/*.yml", "jobs/*.sh", "palette/*"],
+        "aiesda": ["nml/*.nml", "yaml/*.yml", "yaml/*.yaml", "jobs/*.sh", "palette/*"],
     },
+    
     include_package_data=True,
     zip_safe=False,
-    install_requires=[
-        "numpy>=1.22.4",
-        "torch>=1.12.0",
-        "pyyaml>=6.0",
-        "xarray",
-        "netCDF4"
-        "matplotlib>=3.5.0",
-        # Note: JEDI/SABER/NCAR components are usually 
-        # provided by the HPC environment modules.
-    ],
+    install_requires=parse_requirements("requirements.txt"),
     python_requires=">=3.9",
+
+    entry_points={
+        "console_scripts": [
+            "aiesda-run=aiesda.scripts.main:run",  
+            "aiesda-init=aiesda.scripts.setup_env:init",
+        ],
+    },
 )
+
 

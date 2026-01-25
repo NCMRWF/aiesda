@@ -1,6 +1,23 @@
 # ==============================================================================
 # AIESDA Dependency Blocks
+# requirements.txt
 # ==============================================================================
+
+# >>> BASH_CONFIG_START >>>
+# NATIVE_BLOCKS=(
+#     "Numerical and Data Handling"
+#     "Geospatial Visualization"
+#     "AI and Deep Learning"
+#     "Meteorological Specifics"
+#     "Configuration and Logging Libraries"
+#     "ECMWF Anemoi and Related Stack"
+# )
+#
+# COMPLEX_BLOCKS=(
+#     "NCAR Legacy Graphics and InOut"
+#     "JCSDA JEDI and Related Stack"
+# )
+# <<< BASH_CONFIG_END <<<
 
 # === BLOCK: Numerical and Data Handling ===
 numpy>=1.22.4
