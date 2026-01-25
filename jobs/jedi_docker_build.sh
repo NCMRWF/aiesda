@@ -50,8 +50,11 @@ if [ "$IS_WSL" = true ]; then
         echo "❌ ERROR: Docker failed to start. Check WSL Integration in Settings."
         exit 1
     fi
+fi
 
     # 3. Build Logic
+# Note: Ensure IS_WSL is passed or detected here
+if [ "$IS_WSL" = true ]; then
     if docker image inspect aiesda_jedi:${JEDI_VERSION} &>/dev/null; then
         echo "✅ Docker image aiesda_jedi:${JEDI_VERSION} already exists."
     else
@@ -59,23 +62,26 @@ if [ "$IS_WSL" = true ]; then
         mkdir -p "$BUILD_WORKSPACE"
         
         if [ -f "${REQUIREMENTS}" ]; then
-            cp "${REQUIREMENTS}" "$BUILD_WORKSPACE/requirement.txt"
+            cp "${REQUIREMENTS}" "$BUILD_WORKSPACE/requirements.txt"
         else
             echo "❌ ERROR: ${REQUIREMENTS} not found."
             exit 1
         fi
 
+        # Update inside Section 3 of jedi_docker_build.sh:
         cat << 'EOF_DOCKER' > "$BUILD_WORKSPACE/Dockerfile"
 FROM jcsda/docker-gnu-openmpi-dev:latest
 USER root
 RUN apt-get update && apt-get install -y python3-pip libeccodes-dev build-essential python3-dev && rm -rf /var/lib/apt/lists/*
-WORKDIR /home/aiesda
-COPY requirement.txt .
-RUN python3 -m pip install --no-cache-dir -r requirement.txt --break-system-packages
-ENV PYTHONPATH="/usr/local/bundle/install/lib/python3.10/dist-packages:/usr/local/lib/python3.10/dist-packages:/home/aiesda/lib/aiesda/pylib:/home/aiesda/lib/aiesda/pydic"
+
+WORKDIR /app
+COPY requirements.txt .
+RUN python3 -m pip install --no-cache-dir -r requirements.txt --break-system-packages
+#ENV PYTHONPATH="......."
+# Note: We rely on the 'jedi-run' wrapper to inject the host-built PYTHONPATH 
+# via the -e flag, so we just need to ensure the JEDI system paths are ready.
 RUN JEDI_BASE_DIR=$(find /usr/local -name "ufo" -type d | head -n 1) && \
-    export JEDI_PATH=$(dirname "$JEDI_BASE_DIR") && \
-    export PYTHONPATH="$JEDI_PATH:$PYTHONPATH" && \
+    echo "export PYTHONPATH=$(dirname $JEDI_BASE_DIR):\$PYTHONPATH" >> /etc/bash.bashrc
     python3 -c "import ufo; print('✅ JEDI UFO found at:', ufo.__file__)"
 EOF_DOCKER
 
