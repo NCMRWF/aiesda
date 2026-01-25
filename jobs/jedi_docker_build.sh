@@ -87,18 +87,24 @@ EOF_DOCKER
         rm -rf "$BUILD_WORKSPACE"
         [ $BUILD_STATUS -ne 0 ] && echo "❌ Docker build failed." && exit 1
     fi
+fi
 
-    # 4. Create Wrapper Script
-    AIESDA_BIN_DIR="${BUILD_DIR}/bin"
-    mkdir -p "$AIESDA_BIN_DIR"
-    
-    cat << 'EOF' > "${AIESDA_BIN_DIR}/jedi-run"
+# --- 4. Create Wrapper Script ---
+AIESDA_BIN_DIR="${BUILD_DIR}/bin"
+mkdir -p "$AIESDA_BIN_DIR"
+
+cat << EOF > "${AIESDA_BIN_DIR}/jedi-run"
 #!/bin/bash
 # AIESDA JEDI Docker Wrapper
-docker run -it --rm -v $(pwd):/home/aiesda aiesda_jedi:latest "$@"
+# Mounts the current directory AND the AIESDA install root for full integration
+docker run -it --rm \\
+    -v "\$(pwd):/home/aiesda/work" \\
+    -v "${AIESDA_INSTALLED_ROOT}:/home/aiesda/lib" \\
+    -w /home/aiesda/work \\
+    aiesda_jedi:${JEDI_VERSION} "\$@"
 EOF
-    chmod +x "${AIESDA_BIN_DIR}/jedi-run"
-fi
+chmod +x "${AIESDA_BIN_DIR}/jedi-run"
+
 
 # --- 3. Module Generation ---
 mkdir -p "$(dirname "${JEDI_MODULE_FILE}")"
