@@ -93,18 +93,22 @@ fi
 AIESDA_BIN_DIR="${BUILD_DIR}/bin"
 mkdir -p "$AIESDA_BIN_DIR"
 
+# Verify this variable is set at the top of your builder or passed in
+AIESDA_INSTALLED_ROOT="${BUILD_DIR}"
+
+# The Wrapper Creation
 cat << EOF > "${AIESDA_BIN_DIR}/jedi-run"
 #!/bin/bash
 # AIESDA JEDI Docker Wrapper
 # Mounts the current directory AND the AIESDA install root for full integration
 docker run -it --rm \\
-    -v "\$(pwd):/home/work/aiesda" \\
-    -v "${AIESDA_INSTALLED_ROOT}:/home/aiesda/lib" \\
-    -w /home/work/aiesda \\
+    -v "\$(pwd):/app/work" \\
+    -v "${AIESDA_INSTALLED_ROOT}/lib:/app/lib" \\
+    -w /app/work \\
+    -e PYTHONPATH="/app/lib:/app/lib/aiesda/pylib:/app/lib/aiesda/pydic:\$PYTHONPATH" \\
     aiesda_jedi:${JEDI_VERSION} "\$@"
 EOF
 chmod +x "${AIESDA_BIN_DIR}/jedi-run"
-
 
 # --- 3. Module Generation ---
 mkdir -p "$(dirname "${JEDI_MODULE_FILE}")"
