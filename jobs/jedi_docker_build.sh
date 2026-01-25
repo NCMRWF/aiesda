@@ -133,7 +133,10 @@ if { [file isdirectory \$jedi_root/bin] } {
     prepend-path PATH            \$jedi_root/bin
 }
 
-help "This module provides 'jedi-run' to execute JEDI tasks via Docker on WSL."
+proc ModulesHelp { } {
+    puts stderr "This module provides 'jedi-run' to execute JEDI tasks via Docker on WSL."
+}
+
 EOF_MODULE
 
 # --- 4. Testing Environment & Instructions ---
