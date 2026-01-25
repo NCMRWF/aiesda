@@ -26,7 +26,7 @@ cd aiesda
 ./install.sh
 
 ```
-# Build Package directory structure
+# Package directory structure after installation
 
 ```
 aiesda_build_2026.1/
@@ -34,39 +34,23 @@ aiesda_build_2026.1/
 │   ├── aiesda/
 │   │   ├── __init__.py    (from setup.py build)
 │   │   ├── VERSION        (copied manually)
-
 │   │   ├── nml/           (synced assets)
-
 │   │   ├── yaml/          (synced assets)
-
 │   │   ├── pylib/         (synced assets)
-
 │   │   ├── pydic/
-
 │   │   ├── scripts/
-
 │   │   ├── jobs/
-
 │   │   ├── pallets/
-
 │   │   ├── docs/ 
-
 │   │   └── ...
-
 │   └── [site-packages]    (compiled python code)
-
 └───bin/
-
     ├─── ...
-    
     └─── ...
     
 jedi_build_2026.1/
-
 └───bin/
-
-    ├─── ...
-    
+    ├─── ...  
     └─── ...
     
 ```
