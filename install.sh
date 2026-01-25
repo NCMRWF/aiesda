@@ -176,7 +176,9 @@ echo "🧪 Running Post-Installation Tests..."
         echo "🔄 Loading AIESDA and JEDI modules..."
         module load ${PKG_MODULE_FILE}
         module load ${JEDI_MODULE_FILE}
-        
+
+        # New, cleaner test verifying both version and config
+        python3 -c "import aiesda; print(f'✅ AIESDA v{aiesda.__version__} initialized with {aiesda.AIESDAConfig}')"
         if [ "$IS_WSL" = true ]; then
             echo "📝 WSL Detection: Testing JEDI-Bridge..."
             # Verify the wrapper from the 'jedi' module is active
