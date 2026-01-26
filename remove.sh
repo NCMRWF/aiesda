@@ -4,6 +4,14 @@
 # ==============================================================================
 
 PROJECT_NAME="aiesda"
+
+# Discover the Repo Root relative to this script's location
+# This allows you to run 'bash jobs/install.sh' from anywhere
+JOBS_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PROJECT_ROOT=$(cd "$JOBS_DIR/.." && pwd)
+
+# Change directory to root so setup.py and VERSION are accessible
+cd "$PROJECT_ROOT"
 BUILD_ROOT="${HOME}/build"
 MODULE_PATH="${HOME}/modulefiles"
 
