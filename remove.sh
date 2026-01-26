@@ -24,9 +24,14 @@ SPECIFIC_BUILD="${BUILD_ROOT}/${PROJECT_NAME}_build_${TARGET_VERSION}"
 BUILD_REQUIREMENTS="${SPECIFIC_BUILD}/lib/aiesda/requirements.txt"
 
 # 2. Extract JEDI Version from the TARGET BUILD requirements
-# This ensures we remove the JEDI version that was actually linked during THAT install
 if [ -f "$BUILD_REQUIREMENTS" ]; then
-    JEDI_VERSION=$(grep -iE "^jedi[>=]*" "$BUILD_REQUIREMENTS" | head -n 1 | sed 's/[^0-9.]*//g')
+    # Extracts the version number even if the line is 'jedi==1.2.3' or 'jedi>=1.2.3'
+    JEDI_VERSION=$(grep -iE "^jedi" "$BUILD_REQUIREMENTS" | head -n 1 | sed 's/.*[>=]\+\s*//g' | tr -d '[:space:]')
+    
+    # If the requirements just said 'jedi' without a version, default to 'latest'
+    if [[ -z "$JEDI_VERSION" || "$JEDI_VERSION" == "jedi" ]]; then
+        JEDI_VERSION="latest"
+    fi
 fi
 
 # Fallback if the build area is already partially gone or requirements missing
