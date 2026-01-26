@@ -1,0 +1,24 @@
+# === AIESDA Build Artifacts ===
+# Ignore the egg-info metadata created by setuptools
+*.egg-info/
+
+# Ignore the local build and dist folders if created in root
+build/
+dist/
+
+# === Python Runtime Artifacts ===
+# Ignore compiled bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# === Local Logs & Environment ===
+# Ignore local log files that might leak into the root
+*.log
+.pytest_cache/
+.coverage
+
+# === OS Specific ===
+.DS_Store
+# ==============================
