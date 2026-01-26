@@ -43,7 +43,7 @@ JEDI_MODULE_FILE="${MODULE_PATH}/jedi/${JEDI_VERSION}"
 
 # Uninstall pre-existing build copies of the same version number.
 echo "♻️  Wiping existing installation for v$VERSION..."
-bash remove.sh "$VERSION" >/dev/null 2>&1
+bash $JOBS_DIR/remove.sh "$VERSION" >/dev/null 2>&1
 
 # Dynamically extract NATIVE_BLOCKS and COMPLEX_BLOCKS from requirements.txt
 if [ -f "$REQUIREMENTS" ]; then
@@ -146,9 +146,9 @@ fi
 if [ "$DA_MISSING" -gt 0 ]; then
     echo "🐳 Missing $DA_MISSING DA components. Initializing JEDI v${JEDI_VERSION} Build..."
     
-    chmod +x "${PROJECT_ROOT}/jobs/jedi_docker_build.sh"
+    chmod +x "${JOBS_DIR}/jedi_docker_build.sh"
     # PASS JEDI_VERSION instead of AIESDA VERSION
-    bash "${PROJECT_ROOT}/jobs/jedi_docker_build.sh" "$JEDI_VERSION"
+    bash "${JOBS_DIR}/jedi_docker_build.sh" "$JEDI_VERSION"
 
 else
     echo "✅ No Docker fallback required."
