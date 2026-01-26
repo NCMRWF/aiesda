@@ -27,3 +27,12 @@ test:
 
 reinstall: 
 	clean install
+
+# Makefile snippet
+bump:
+	@chmod +x bump_version.sh
+	@./bump_version.sh
+
+# Use this to verify the version before a build
+version:
+	@echo "Current Target: $$(cat VERSION)"
