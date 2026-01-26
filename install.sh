@@ -2,7 +2,12 @@
 # ==============================================================================
 # AIESDA Unified Installer (WSL/Laptop & HPC)
 # ==============================================================================
+# install.sh
+LOG_BASE="${HOME}/logs/$(date +%Y/%m/%d)/${PROJECT_NAME}/${VERSION}"
+mkdir -p "$LOG_BASE"
 
+echo "📝 Logs for this installation session: ${LOG_BASE}/install.log"
+exec > >(tee -a "${LOG_BASE}/install.log") 2>&1
 ###########################################################
 # --- 1. Configuration ---
 ###########################################################
