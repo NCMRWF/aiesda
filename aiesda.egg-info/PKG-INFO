@@ -1,0 +1,6 @@
+Metadata-Version: 2.1
+Name: aiesda
+Version: 2026.1
+Summary: Artificial Intelligence based Earth System Data Assimilation
+Author: gibies
+Requires-Python: >=3.9
