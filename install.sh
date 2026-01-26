@@ -3,7 +3,9 @@
 # AIESDA Unified Installer (WSL/Laptop & HPC)
 # ==============================================================================
 
+###########################################################
 # --- 1. Configuration ---
+###########################################################
 # Read version, clean whitespace, and strip leading zeros (2026.01 -> 2026.1)
 VERSION=$(cat VERSION 2>/dev/null | tr -d '[:space:]' | sed 's/\.0\+/\./g')
 VERSION=${VERSION:-"dev"}  # If VERSION is empty or file missing, default to 'dev'
@@ -40,9 +42,10 @@ fi
 
 # Verify the extraction worked
 echo "🔍 Loaded ${#NATIVE_BLOCKS[@]} Native Blocks and ${#COMPLEX_BLOCKS[@]} Complex Blocks."
-###########################################################
 
+###########################################################
 # --- 2. Pre-flight Checks (WSL & OS Detection) ---
+###########################################################
 IS_WSL=false
 if grep -qi "microsoft" /proc/version 2>/dev/null || grep -qi "wsl" /proc/sys/kernel/osrelease 2>/dev/null; then
     IS_WSL=true
@@ -50,9 +53,10 @@ if grep -qi "microsoft" /proc/version 2>/dev/null || grep -qi "wsl" /proc/sys/ke
 else
     echo "🐧 Native Linux/HPC Detected."
 fi
-###########################################################
 
+###########################################################
 # --- 3. Self-Healing: Check for pip ---
+###########################################################
 if ! command -v pip3 &> /dev/null; then
     echo "python3-pip not found. Attempting to install..."
     if [ "$IS_WSL" = true ]; then
@@ -63,9 +67,10 @@ if ! command -v pip3 &> /dev/null; then
         exit 1
     fi
 fi
-###########################################################
 
+###########################################################
 # --- 4. Helper Function (With '&' Fix) ---
+###########################################################
 get_req_block() {
     local block_name=$1
     local escaped_name=$(echo "$block_name" | sed 's/&/\\&/g')
@@ -81,8 +86,8 @@ get_req_block() {
 
 
 ###########################################################
-
 # --- 5. Installation Loop ---
+###########################################################
 echo "🐍 Upgrading pip..."
 python3 -m pip install --user --upgrade pip --break-system-packages
 
@@ -91,9 +96,10 @@ for block in "${NATIVE_BLOCKS[@]}"; do
     PKGS=$(get_req_block "$block")
     [ ! -z "$PKGS" ] && python3 -m pip install --user $PKGS --break-system-packages
 done
-###########################################################
 
+###########################################################
 # --- 6. Complex Block Verification ---
+###########################################################
 DA_MISSING=0
 
 if [ "$IS_WSL" = true ]; then
@@ -121,8 +127,8 @@ else
 fi
 
 ###########################################################
-
 # --- 7. Docker Fallback Logic ---
+###########################################################
 if [ "$DA_MISSING" -gt 0 ]; then
     echo "🐳 Missing $DA_MISSING DA components. Initializing JEDI v${JEDI_VERSION} Build..."
     
@@ -137,6 +143,7 @@ fi
 
 ###########################################################
 # --- 8. Build & Module Generation ---
+###########################################################
 echo "🏗️  Finalizing AIESDA Build..."
 rm -rf "${BUILD_DIR}"
 # Build the package into the targeted build directory
@@ -189,8 +196,17 @@ if { [file isdirectory \$aiesda_root/bin] } {
 EOF_MODULE
 
 ###########################################################
+# --- 9. Build Metadata archival for future reference ---
+###########################################################
+# Inside install.sh (After the build/install step)
+echo "📦 Archiving build metadata..."
+mkdir -p "${BUILD_DIR}/lib/aiesda"
+cp "${PROJECT_ROOT}/requirements.txt" "${BUILD_DIR}/lib/aiesda/requirements.txt"
+cp "${PROJECT_ROOT}/VERSION" "${BUILD_DIR}/lib/aiesda/VERSION"
 
-# --- 9. Testing Environment ---
+###########################################################
+# --- 10. Testing Environment ---
+###########################################################
 echo "🧪 Running Post-Installation Tests..."
 (
     # Initialize modules if they aren't already
