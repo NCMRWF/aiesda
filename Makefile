@@ -52,5 +52,6 @@ update:
 	@$(MAKE) reinstall SITE=$(SITE)
 
 release: 
+	@$(MAKE) test
 	@$(MAKE) bump
 	@$(MAKE) archive -m $(MSG)
