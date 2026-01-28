@@ -42,11 +42,15 @@ bump:
 archive:
 	@bash jobs/archive_pkg.sh -m $(MSG)
 
-reinstall: 
-	clean install
+# Ensure clean finishes before install starts
+reinstall:
+	@$(MAKE) clean
+	@$(MAKE) install
 
 update: 
-	sync reinstall
+	@$(MAKE) sync
+	@$(MAKE) reinstall
 
 release: 
-	bump archive
+	@$(MAKE) bump
+	@$(MAKE) archive
