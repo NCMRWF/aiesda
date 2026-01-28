@@ -28,7 +28,7 @@ sync:
 	@bash jobs/update_pkg.sh
 
 install:
-	@bash jobs/install.sh SITE=$(SITE)
+	@bash jobs/install.sh $(SITE)
 
 clean:
 	@bash jobs/remove.sh $$(cat VERSION)
