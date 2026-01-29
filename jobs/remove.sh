@@ -70,7 +70,7 @@ if [[ "$SITE_NAME" == "docker" ]] && [[ "$NEW_JEDI_REQ" != "$OLD_JEDI_INSTALLED"
     fi
 fi
 
-if [["$DO_FULL_WIPE" == "true"]]; then
+if [[ "$DO_FULL_WIPE" == "true" ]]; then
     # Remove Docker Image
     if command -v docker &>/dev/null; then
         IMAGE_ID=$(docker images -q "$JEDI_IMAGE")
