@@ -72,6 +72,8 @@ sed -i '/# >>> AIESDA_JEDI_SETUP >>>/,/# <<< AIESDA_JEDI_SETUP <<< /d' ~/.bashrc
 JEDI_VERSION=$(grep -iE "^jedi[>=]*" "$REQUIREMENTS" | head -n 1 | sed 's/[^0-9.]*//g')
 # Fallback if not found
 JEDI_VERSION=${JEDI_VERSION:-"latest"}
+# We export the JEDI_VERSION so the TCL script can pick it up via $env()
+export JEDI_VERSION="${JEDI_VERSION}"
 echo "🔍 Detected JEDI Target Version: ${JEDI_VERSION}"
 JEDI_MODULE_FILE="${MODULE_PATH}/jedi/${JEDI_VERSION}"
 
@@ -269,8 +271,6 @@ cat << EOF_MODULE > "${PKG_MODULE_FILE}"
 EOF_MODULE
 
 # Inject the site-specific TCL snippet
-# We export the JEDI_VERSION so the TCL script can pick it up via $env()
-export JEDI_VERSION="${JEDI_VERSION}"
 if [ -f "sites/${SITE_NAME}/env_setup.tcl" ]; then
     cat "sites/${SITE_NAME}/env_setup.tcl" >> "${PKG_MODULE_FILE}"
 fi
