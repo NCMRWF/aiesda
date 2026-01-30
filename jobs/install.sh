@@ -79,7 +79,7 @@ JEDI_MODULE_FILE="${MODULE_PATH}/jedi/${JEDI_VERSION}"
 
 # Uninstall pre-existing build copies of the same version number.
 echo "♻️  Wiping existing installation for v$VERSION..."
-bash $JOBS_DIR/remove.sh "$VERSION" >/dev/null 2>&1
+bash $JOBS_DIR/remove.sh -v "$VERSION" >/dev/null 2>&1
 
 # Dynamically extract NATIVE_BLOCKS and COMPLEX_BLOCKS from requirements.txt
 if [ -f "$REQUIREMENTS" ]; then
