@@ -217,12 +217,12 @@ done
 # --- 6. Complex Block Verification ---
 ###########################################################
 DA_MISSING=0
+echo "🔍 Checking for pre-installed DA components..."
 
-if [ "$IS_WSL" = true ]; then
-    # WSL always defaults to needing the Docker JEDI bridge
-    DA_MISSING=1
-else
-    echo "🔍 Checking native DA components (HPC Mode)..."
+# Create a temp file to store the counts (required for background subshells)
+tmp_count=$(mktemp)
+
+(
     DA_FOUND_COUNT=0
     TOTAL_DA_PKGS=0
     
@@ -230,19 +230,36 @@ else
         PKGS=$(get_req_block "$block")
         for pkg in $PKGS; do
             ((TOTAL_DA_PKGS++))
-            # Clean package name to get the importable module name
+            # Clean package name: remove 'py', version constraints, and spaces
             lib=$(echo "$pkg" | sed 's/py//' | cut -d'=' -f1 | cut -d'>' -f1 | tr -d '[:space:]')
-            if python3 -c "import $lib" &>/dev/null; then
+            
+            # Perform the import check
+            if $PYTHON_EXE -c "import $lib" &>/dev/null; then
                 ((DA_FOUND_COUNT++))
             fi
         done
-		show_spinner $! "$block"
     done
+    echo "$DA_FOUND_COUNT $TOTAL_DA_PKGS" > "$tmp_count"
+) &
 
-    # Calculate how many are missing. If > 0, we need the container fallback.
-    DA_MISSING=$((TOTAL_DA_PKGS - DA_FOUND_COUNT))
+show_spinner $! "DA Dependency Check"
+
+# Retrieve the results
+read -r DA_FOUND_COUNT TOTAL_DA_PKGS < "$tmp_count"
+rm -f "$tmp_count"
+
+DA_MISSING=$((TOTAL_DA_PKGS - DA_FOUND_COUNT))
+
+# Final Assessment
+if [ "$DA_MISSING" -gt 0 ]; then
+    if [ "$IS_WSL" = true ]; then
+        echo "🐳 Found $DA_FOUND_COUNT/$TOTAL_DA_PKGS components. WSL mode will use Docker fallback."
+    else
+        echo "⚠️  Found $DA_FOUND_COUNT/$TOTAL_DA_PKGS components. HPC mode requires JEDI container bridge."
+    fi
+else
+    echo "✅ All $TOTAL_DA_PKGS DA components found natively. Skipping Docker fallback."
 fi
-
 
 ###########################################################
 # --- 7. Docker Fallback Logic ---
@@ -253,11 +270,11 @@ if [ "$DA_MISSING" -gt 0 ]; then
     chmod +x "${JOBS_DIR}/jedi_docker_build.sh"
     # PASS JEDI_VERSION instead of AIESDA VERSION
     bash "${JOBS_DIR}/jedi_docker_build.sh" "$JEDI_VERSION"
-
+	show_spinner $! "JEDI v${JEDI_VERSION} Build on Docker"
 else
     echo "✅ No Docker fallback required."
 fi
-show_spinner $!
+
 
 ###########################################################
 # --- 8. Build & Module Generation ---
@@ -321,7 +338,7 @@ if { [file isdirectory \$aiesda_root/bin] } {
     prepend-path PATH            \$aiesda_root/bin
 }
 EOF_MODULE
-show_spinner $!
+
 
 ###########################################################
 # --- 9. Build Metadata archival for future reference ---
@@ -331,7 +348,7 @@ echo "📦 Archiving build metadata..."
 mkdir -p "${BUILD_DIR}/lib/aiesda"
 cp "${PROJECT_ROOT}/requirements.txt" "${BUILD_DIR}/lib/aiesda/requirements.txt"
 cp "${PROJECT_ROOT}/VERSION" "${BUILD_DIR}/lib/aiesda/VERSION"
-show_spinner $!
+
 
 ###########################################################
 # --- 10. Testing Environment ---
@@ -368,7 +385,7 @@ echo "🧪 Running Post-Installation Tests..."
         fi
     fi
 )
-show_spinner $!
+show_spinner $! "environment testing"
 
 ###########################################################
 # --- 11. Final Summary ---
