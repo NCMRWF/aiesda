@@ -4,11 +4,6 @@
 # ==============================================================================
 # install.sh
 
-SELF=$(realpath ${0})
-HOST=$(hostname)
-export JOBSDIR=${SELF%/*}
-export PKG_ROOT=${SELF%/jobs/*}
-export PKG_NAME=${PKG_ROOT##*/}
 
 ###########################################################################################
 helpdesk()
@@ -33,15 +28,28 @@ while test $# -gt 0; do
 done
 }
 ###########################################################################################
-options $(echo $@  | tr "=" " ")
 ###########################################################################################
-
 # Helper for clean progress reporting
 step_label() {
     echo -e "\n\033[1;34m[STEP $1]: $2\033[0m"
     echo "------------------------------------------------"
 }
-
+###########################################################################################
+###########################################################################################
+get_req_block() {
+    local block_name=$1
+    local escaped_name=$(echo "$block_name" | sed 's/&/\\&/g')
+    if [ -f "$REQUIREMENTS" ]; then
+        # 1. Extract block
+        # 2. Remove block headers
+        # 3. Remove lines that are ONLY comments or empty
+        # 4. Remove inline comments (space+#)
+        sed -n "/# === BLOCK: ${escaped_name} ===/,/# === END BLOCK ===/p" "$REQUIREMENTS" | \
+            sed "/# ===/d; /^\s*#/d; /^\s*$/d; s/[[:space:]]*#.*//g"
+    fi
+}
+###########################################################################################
+###########################################################################################
 show_spinner() {
     local pid=$1
     local block=${2:-"task"}
@@ -74,11 +82,18 @@ show_spinner() {
 }
 ###########################################################################################
 
-
 ###########################################################################################
-# --- 1. Configuration ---
+# --- 1.1 Environment Configuration ---
 ###########################################################################################
-
+SELF=$(realpath ${0})
+HOST=$(hostname)
+export JOBSDIR=${SELF%/*}
+export PKG_ROOT=${SELF%/jobs/*}
+export PKG_NAME=${PKG_ROOT##*/}
+options $(echo $@  | tr "=" " ")
+###########################################################################################
+# --- 1.2 Local variables ---
+###########################################################################################
 PROJECT_NAME=${PKG_NAME:-"aiesda"}
 # Capture Site Argument (Default to 'docker')
 SITE_NAME=${SITE_NAME:-"docker"}
@@ -120,8 +135,10 @@ JEDI_MODULE_FILE="${MODULE_PATH}/jedi/${JEDI_VERSION}"
 # Uninstall pre-existing build copies of the same version number.
 echo "♻️  Wiping existing installation for v$VERSION..."
 bash $JOBS_DIR/remove.sh -v "$VERSION" >/dev/null 2>&1
-
-# Dynamically extract NATIVE_BLOCKS and COMPLEX_BLOCKS from requirements.txt
+show_spinner $! "cleanup"
+###########################################################################################
+# 1.2 Dynamically extract NATIVE_BLOCKS and COMPLEX_BLOCKS from requirements.txt
+###########################################################################################
 if [ -f "$REQUIREMENTS" ]; then
     # Extract lines between markers, remove leading '# ', and FILTER OUT the markers themselves
     eval "$(sed -n '/# >>> BASH_CONFIG_START >>>/,/# <<< BASH_CONFIG_END <<</p' "$REQUIREMENTS" | \
@@ -134,11 +151,6 @@ fi
 
 # Verify the extraction worked
 echo "🔍 Loaded ${#NATIVE_BLOCKS[@]} Native Blocks and ${#COMPLEX_BLOCKS[@]} Complex Blocks."
-
-###########################################################################################
-# --- 1.1 Progress reporting function ---		###
-###########################################################################################
-
 
 
 ###########################################################################################
@@ -159,7 +171,7 @@ echo "🐍 Using Python executable: $PYTHON_EXE"
 
 
 ###########################################################
-# --- 2.2 Pre-flight Checks (WSL & OS Detection) ---
+# --- 3. Pre-flight Checks (WSL & OS Detection) ---
 ###########################################################
 IS_WSL=false
 if grep -qi "microsoft" /proc/version 2>/dev/null || grep -qi "wsl" /proc/sys/kernel/osrelease 2>/dev/null; then
@@ -168,11 +180,11 @@ if grep -qi "microsoft" /proc/version 2>/dev/null || grep -qi "wsl" /proc/sys/ke
 else
     echo "🐧 Native Linux/HPC Detected."
 fi
-show_spinner $!
 
 ###########################################################
-# --- 3. Self-Healing: Check for pip ---
+# --- 4. Self-Healing: Check for pip ---
 ###########################################################
+(
 if ! command -v pip3 &> /dev/null; then
     echo "python3-pip not found. Attempting to install..."
     if [ "$IS_WSL" = true ]; then
@@ -183,24 +195,9 @@ if ! command -v pip3 &> /dev/null; then
         exit 1
     fi
 fi
-show_spinner $!
+)&
+show_spinner $! "pip3install"
 
-###########################################################
-# --- 4. Helper Function (With '&' Fix) ---
-###########################################################
-get_req_block() {
-    local block_name=$1
-    local escaped_name=$(echo "$block_name" | sed 's/&/\\&/g')
-    if [ -f "$REQUIREMENTS" ]; then
-        # 1. Extract block
-        # 2. Remove block headers
-        # 3. Remove lines that are ONLY comments or empty
-        # 4. Remove inline comments (space+#)
-        sed -n "/# === BLOCK: ${escaped_name} ===/,/# === END BLOCK ===/p" "$REQUIREMENTS" | \
-            sed "/# ===/d; /^\s*#/d; /^\s*$/d; s/[[:space:]]*#.*//g"
-    fi
-}
-show_spinner $!
 
 ###########################################################
 # --- 5. Installation Loop ---
@@ -239,12 +236,13 @@ else
                 ((DA_FOUND_COUNT++))
             fi
         done
+		show_spinner $! "$block"
     done
 
     # Calculate how many are missing. If > 0, we need the container fallback.
     DA_MISSING=$((TOTAL_DA_PKGS - DA_FOUND_COUNT))
 fi
-show_spinner $!
+
 
 ###########################################################
 # --- 7. Docker Fallback Logic ---
