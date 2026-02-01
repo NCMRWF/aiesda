@@ -38,7 +38,7 @@ clean:
 	@bash jobs/remove.sh $$(cat VERSION)
 
 test:
-	@bash jobs/aiesda-dev-cycle-test.sh $(ARGS)
+	@bash jobs/aiesda-dev-cycle-test.sh --site $(SITE)
 
 bump:
 	@bash jobs/bump_version.sh
