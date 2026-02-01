@@ -82,6 +82,9 @@ show_spinner() {
 ###########################################################################################
 # --- 1.1 Environment Configuration ---
 ###########################################################################################
+
+###########################################################################################
+
 ###########################################################################################
 SELF=$(realpath "${0}")
 JOBS_DIR=$(cd "$(dirname "${SELF}")" && pwd)
@@ -102,14 +105,15 @@ VERSION=${VERSION:-"dev"}
 JEDI_VERSION=$(grep -iE "^jedi[>=]*" "$REQUIREMENTS" | head -n 1 | sed 's/[^0-9.]*//g')
 JEDI_VERSION=${JEDI_VERSION:-"latest"}
 export JEDI_VERSION="${JEDI_VERSION}"
-BUILD_DIR="${HOME}/build/${PROJECT_NAME}_build_${VERSION}"
+BUILD_ROOT="${HOME}/build"
+BUILD_DIR="${BUILD_ROOT}/${PROJECT_NAME}_build_${VERSION}"
 BUILD_WORKSPACE="${HOME}/build/docker_build_tmp"
 MODULE_PATH="${HOME}/modulefiles"
 JEDI_MODULE_FILE="${MODULE_PATH}/jedi/${JEDI_VERSION}"
 PKG_MODULE_FILE="${MODULE_PATH}/${PROJECT_NAME}/${VERSION}"
 LOG_BASE="${HOME}/logs/$(date +%Y/%m/%d)/${PROJECT_NAME}/${VERSION}"
 ###########################################################################################
-cd "$PROJECT_ROOT"
+###########################################################################################cd "$PROJECT_ROOT"
 mkdir -p "$LOG_BASE"
 echo "📝 Logs for this installation session: ${LOG_BASE}/install.log"
 exec > >(tee -a "${LOG_BASE}/install.log") 2>&1
