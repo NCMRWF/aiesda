@@ -26,11 +26,17 @@ while test $# -gt 0; do
 done
 }
 ###########################################################################################
-
+###########################################################################################
+# --- 1.1 Environment Configuration ---
+###########################################################################################
+SELF=$(realpath ${0})
+HOST=$(hostname)
+export JOBSDIR=${SELF%/*}
+export PKG_ROOT=${SELF%/jobs/*}
+export PKG_NAME=${PKG_ROOT##*/}
+options $(echo $@  | tr "=" " ")
 # --- 1. Path & Environment Setup ---
-SELF=$(realpath "${0}")
-HOMEDIR=$(cd "$(dirname "$(realpath "$0")")/.." && pwd)
-PROJECT_ROOT="$HOMEDIR"
+PROJECT_ROOT="${PKG_ROOT}"
 MODULE_PATH="${HOME}/modulefiles"
 
 # Ensure VERSION and PROJECT_NAME are set (inherited or defaulted)
