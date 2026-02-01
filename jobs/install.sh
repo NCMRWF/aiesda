@@ -79,57 +79,42 @@ show_spinner() {
     fi
 }
 ###########################################################################################
-
 ###########################################################################################
 # --- 1.1 Environment Configuration ---
 ###########################################################################################
-SELF=$(realpath ${0})
-HOST=$(hostname)
-export JOBSDIR=${SELF%/*}
-export PKG_ROOT=${SELF%/jobs/*}
-export PKG_NAME=${PKG_ROOT##*/}
-options $(echo $@  | tr "=" " ")
 ###########################################################################################
-# --- 1.2 Local variables ---
-###########################################################################################
-PROJECT_NAME=${PKG_NAME:-"aiesda"}
-# Capture Site Argument (Default to 'docker')
+SELF=$(realpath "${0}")
+JOBS_DIR=$(cd "$(dirname "${SELF}")" && pwd)
+if [[ "$SELF" == *"/jobs/"* ]]; then
+    export PKG_ROOT=$(cd "$JOBS_DIR/.." && pwd)
+else
+    export PKG_ROOT="$JOBS_DIR"
+fi
+options $(echo "$@" | tr "=" " ")
+export PKG_NAME=${PKG_ROOT##*/:-"aiesda"}
+PROJECT_NAME="${PKG_NAME}"
+PROJECT_ROOT="${PKG_ROOT}"
 SITE_NAME=${SITE_NAME:-"docker"}
-
-# Discover the Repo Root relative to this script's location
-# This allows you to run 'bash jobs/install.sh' from anywhere
-JOBS_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-PROJECT_ROOT=$(cd "$JOBS_DIR/.." && pwd)
-
-# Change directory to root so setup.py and VERSION are accessible
-cd "$PROJECT_ROOT"
-
-VERSION=$(cat VERSION 2>/dev/null | tr -d '[:space:]' | sed 's/\.0\+/\./g')
-VERSION=${VERSION:-"dev"}
-# --- NEW: Initialize Logging NOW that variables are set ---
+HOST=$(hostname)
+REQUIREMENTS="$PROJECT_ROOT/requirements.txt"
+VERSION=${$(cat ${PROJECT_ROOT}/VERSION 2>/dev/null | tr -d '[:space:]' | sed 's/\.0\+/\./g'):-"dev"}
+JEDI_VERSION=${$(grep -iE "^jedi[>=]*" "$REQUIREMENTS" | head -n 1 | sed 's/[^0-9.]*//g'):-"latest"}
+export JEDI_VERSION="${JEDI_VERSION}"
+BUILD_DIR="${HOME}/build/${PROJECT_NAME}_build_${VERSION}"
+BUILD_WORKSPACE="${HOME}/build/docker_build_tmp"
+MODULE_PATH="${HOME}/modulefiles"
+JEDI_MODULE_FILE="${MODULE_PATH}/jedi/${JEDI_VERSION}"
+PKG_MODULE_FILE="${MODULE_PATH}/${PROJECT_NAME}/${VERSION}"
 LOG_BASE="${HOME}/logs/$(date +%Y/%m/%d)/${PROJECT_NAME}/${VERSION}"
+###########################################################################################
+cd "$PROJECT_ROOT"
 mkdir -p "$LOG_BASE"
 echo "📝 Logs for this installation session: ${LOG_BASE}/install.log"
 exec > >(tee -a "${LOG_BASE}/install.log") 2>&1
 # ---------------------------------------------------------
-BUILD_DIR="${HOME}/build/${PROJECT_NAME}_build_${VERSION}"
-BUILD_WORKSPACE="${HOME}/build/docker_build_tmp"
-MODULE_PATH="${HOME}/modulefiles"
-PKG_MODULE_FILE="${MODULE_PATH}/${PROJECT_NAME}/${VERSION}"
-REQUIREMENTS="${PROJECT_ROOT}/requirements.txt"
 AIESDA_INSTALLED_ROOT="${BUILD_DIR}"
 # Surgical cleanup: only removes the block between our markers
 sed -i '/# >>> AIESDA_JEDI_SETUP >>>/,/# <<< AIESDA_JEDI_SETUP <<< /d' ~/.bashrc
-# Extract JEDI version from requirements.txt
-# Looks for the line starting with 'jedi==' or 'jedi>=' within the file
-JEDI_VERSION=$(grep -iE "^jedi[>=]*" "$REQUIREMENTS" | head -n 1 | sed 's/[^0-9.]*//g')
-# Fallback if not found
-JEDI_VERSION=${JEDI_VERSION:-"latest"}
-# We export the JEDI_VERSION so the TCL script can pick it up via $env()
-export JEDI_VERSION="${JEDI_VERSION}"
-echo "🔍 Detected JEDI Target Version: ${JEDI_VERSION}"
-JEDI_MODULE_FILE="${MODULE_PATH}/jedi/${JEDI_VERSION}"
-
 # Uninstall pre-existing build copies of the same version number.
 echo "♻️  Wiping existing installation for v$VERSION..."
 bash $JOBS_DIR/remove.sh -v "$VERSION" >/dev/null 2>&1
