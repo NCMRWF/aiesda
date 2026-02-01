@@ -3,8 +3,27 @@
 # AIESDA Development Cycle Stress Test
 # ==============================================================================
 # aiesda-dev-cycle-test.sh
-
-
+###########################################################################################
+SELF=$(realpath "${0}")
+JOBS_DIR=$(cd "$(dirname "${SELF}")" && pwd)
+if [[ "$SELF" == *"/jobs/"* ]]; then
+    export PKG_ROOT=$(cd "$JOBS_DIR/.." && pwd)
+else
+    export PKG_ROOT="$JOBS_DIR"
+fi
+options $(echo "$@" | tr "=" " ")
+export PKG_NAME=${PKG_ROOT##*/:-"aiesda"}
+PROJECT_NAME="${PKG_NAME}"
+PROJECT_ROOT="${PKG_ROOT}"
+SITE_NAME=${SITE_NAME:-"docker"}
+HOST=$(hostname)
+REQUIREMENTS="$PROJECT_ROOT/requirements.txt"
+VERSION=$(cat ${PROJECT_ROOT}/VERSION 2>/dev/null | tr -d '[:space:]' | sed 's/\.0\+/\./g')
+VERSION=${VERSION:-"dev"}
+JEDI_VERSION=$(grep -iE "^jedi[>=]*" "$REQUIREMENTS" | head -n 1 | sed 's/[^0-9.]*//g')
+JEDI_VERSION=${JEDI_VERSION:-"latest"}
+export JEDI_VERSION="${JEDI_VERSION}"
+###########################################################################################
 # Auto-revert version if the test fails
 trap 'echo "$START_VER" > VERSION; echo "⚠️ Test failed. Version reverted to $START_VER."' ERR
 set -e  # Immediate exit on error
