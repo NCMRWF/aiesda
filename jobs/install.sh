@@ -97,8 +97,10 @@ PROJECT_ROOT="${PKG_ROOT}"
 SITE_NAME=${SITE_NAME:-"docker"}
 HOST=$(hostname)
 REQUIREMENTS="$PROJECT_ROOT/requirements.txt"
-VERSION=${$(cat ${PROJECT_ROOT}/VERSION 2>/dev/null | tr -d '[:space:]' | sed 's/\.0\+/\./g'):-"dev"}
-JEDI_VERSION=${$(grep -iE "^jedi[>=]*" "$REQUIREMENTS" | head -n 1 | sed 's/[^0-9.]*//g'):-"latest"}
+VERSION=$(cat ${PROJECT_ROOT}/VERSION 2>/dev/null | tr -d '[:space:]' | sed 's/\.0\+/\./g')
+VERSION=${VERSION:-"dev"}
+JEDI_VERSION=$(grep -iE "^jedi[>=]*" "$REQUIREMENTS" | head -n 1 | sed 's/[^0-9.]*//g')
+JEDI_VERSION=${JEDI_VERSION:-"latest"}
 export JEDI_VERSION="${JEDI_VERSION}"
 BUILD_DIR="${HOME}/build/${PROJECT_NAME}_build_${VERSION}"
 BUILD_WORKSPACE="${HOME}/build/docker_build_tmp"
