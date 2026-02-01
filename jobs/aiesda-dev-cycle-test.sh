@@ -30,7 +30,7 @@ echo "✅ Target Version set to: $NEW_VER"
 echo "🏗️  Executing Out-of-Source Installation..."
 # We pipe 'n' to install.sh in case it asks for sudo/interactive prompts 
 # (assuming your environment is already pre-configured)
-bash install.sh
+bash install.sh -v "${NEW_VER}" -s "${SITE}"
 
 # ---------------------------------------------------------
 # 3. ARCHITECTURE VERIFICATION
@@ -68,7 +68,7 @@ echo "🐍 Testing Python Namespace and CLI..."
 # ---------------------------------------------------------
 echo "🧹 Testing Surgical Uninstaller..."
 # We provide 'n' to avoid deleting the Docker image during every dev test
-echo "n" | bash remove.sh "$NEW_VER"
+echo "n" | bash remove.sh -v "${NEW_VER}" -s "${SITE}"
 
 if [ ! -d "$BUILD_DIR" ]; then
     echo "✅ Cleanup verified: $BUILD_DIR is gone."
