@@ -2,13 +2,7 @@
 # ==============================================================================
 # AIESDA Version-Specific Cleanup Utility (remove.sh)
 # ==============================================================================
-
-SELF=$(realpath ${0})
-HOST=$(hostname)
-export JOBSDIR=${SELF%/*}
-export PKG_ROOT=${SELF%/jobs/*}
-export PKG_NAME=${PKG_ROOT##*/}
-
+# remove.sh
 ###########################################################################################
 helpdesk()
 {
@@ -34,6 +28,11 @@ while test $# -gt 0; do
 done
 }
 ###########################################################################################
+SELF=$(realpath ${0})
+HOST=$(hostname)
+export JOBSDIR=${SELF%/*}
+export PKG_ROOT=${SELF%/jobs/*:-$(cd "$JOBS_DIR/.." && pwd)}
+export PKG_NAME=${PKG_ROOT##*/}
 options $(echo $@  | tr "=" " ")
 ###########################################################################################
 
@@ -42,7 +41,7 @@ PROJECT_NAME=${PKG_NAME:-"aiesda"}
 # Discover the Repo Root relative to this script's location
 # This allows you to run 'bash jobs/remove.sh' from anywhere
 # JOBS_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-PROJECT_ROOT=${PKG_Root:-$(cd "$JOBS_DIR/.." && pwd)}
+PROJECT_ROOT=${PKG_Root}
 
 # Change directory to root so setup.py and VERSION are accessible
 cd "$PROJECT_ROOT"
@@ -68,10 +67,10 @@ if [ -f "$BUILD_REQUIREMENTS" ]; then
     # Extracts the version number
     JEDI_VERSION=$(grep -iE "^jedi" "$BUILD_REQUIREMENTS" | head -n 1 | sed 's/.*[>=]\+\s*//g' | tr -d '[:space:]')
     
-    # NEW: Extract the specific libraries that were checked for this build
-    # This reads the 'COMPLEX_BLOCKS' variables if they were archived, or parses requirements
-    LIBS_TO_CLEAN=$(grep -iE "^(ufo|ioda|soca|fv3jedi|oops)" "$BUILD_REQUIREMENTS" | cut -d'=' -f1 | cut -d'>' -f1 | tr '\n' ' ')
-    
+    # Identify the specific libraries registered in this build
+    # This filters for the core DA libraries defined in your COMPLEX_BLOCKS
+    LIBS_IN_BUILD=$(grep -iE "^(ufo|ioda|soca|fv3jedi|oops|saber|vader)" "$BUILD_REQUIREMENTS" | cut -d'=' -f1 | cut -d'>' -f1 | tr '\n' ' ')
+	
     if [[ -z "$JEDI_VERSION" || "$JEDI_VERSION" == "jedi" ]]; then
         JEDI_VERSION="latest"
     fi
