@@ -31,3 +31,14 @@ proc ModulesHelp { } {
     puts stderr "This module configures AIESDA to communicate with JEDI via Docker."
     puts stderr "Method: jedi-run (Container Bridge)"
 }
+
+# 5. Provision for manual JEDI run
+if { [module-info mode load] } {
+    # Check if the modulefile exists before trying to load it
+    if { [file exists "$::env(HOME)/modulefiles/jedi/latest"] } {
+        module load jedi/latest
+    } else {
+        # Fallback for environments where the bridge is handled differently
+        setenv JEDI_METHOD "manual"
+    }
+}
