@@ -108,7 +108,7 @@ JEDI_VERSION=$(grep -iE "^jedi[>=]*" "$REQUIREMENTS" | head -n 1 | sed 's/[^0-9.
 JEDI_VERSION=${JEDI_VERSION:-"latest"}
 export JEDI_VERSION="${JEDI_VERSION}"
 BUILD_ROOT="${HOME}/build"
-BUILD_DIR="${BUILD_ROOT}/${PROJECT_NAME}_build_${VERSION}"
+export BUILD_DIR="${BUILD_ROOT}/${PROJECT_NAME}_build_${VERSION}"
 BUILD_WORKSPACE="${HOME}/build/docker_build_tmp"
 MODULE_PATH="${HOME}/modulefiles"
 JEDI_MODULE_FILE="${MODULE_PATH}/jedi/${JEDI_VERSION}"
@@ -315,7 +315,7 @@ fi
 cat << EOF_MODULE >> "${PKG_MODULE_FILE}"
 
 set version      ${VERSION}
-set aiesda_root  ${AIESDA_INSTALLED_ROOT}
+set aiesda_root  ${BUILD_DIR}
 
 setenv           AIESDA_VERSION  \$version
 setenv           AIESDA_ROOT     \$aiesda_root/lib/aiesda
