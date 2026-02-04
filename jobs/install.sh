@@ -262,17 +262,14 @@ fi
 ###########################################################
 # --- 7. Docker Fallback Logic ---
 ###########################################################
-if [ "$DA_MISSING" -gt 0 ]; then
-    echo "🐳 Missing $DA_MISSING DA components. Initializing JEDI v${JEDI_VERSION} Build..."
-    
-    chmod +x "${JOBS_DIR}/jedi_docker_build.sh"
-    # PASS JEDI_VERSION instead of AIESDA VERSION
+# Force Docker build on WSL if the wrapper is missing, regardless of DA_MISSING count
+if [ "$DA_MISSING" -gt 0 ] || ([ "$IS_WSL" = true ] && [ ! -f "${BUILD_DIR}/bin/jedi-run" ]); then
+    echo "🐳 Initializing JEDI v${JEDI_VERSION} Build..."
     bash "${JOBS_DIR}/jedi_docker_build.sh" "$JEDI_VERSION" &
-	show_spinner $! "JEDI v${JEDI_VERSION} Build on Docker"
+    show_spinner $! "JEDI Docker Build"
 else
     echo "✅ No Docker fallback required."
 fi
-
 
 ###########################################################
 # --- 8.1 Build Package
