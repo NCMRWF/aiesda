@@ -94,10 +94,15 @@ RUN apt-get update && apt-get install -y python3-pip libeccodes-dev build-essent
 WORKDIR /app
 COPY requirements.txt .
 RUN python3 -m pip install --no-cache-dir -r requirements.txt --break-system-packages
-# Discovery logic
-RUN JEDI_BASE_DIR=$(find /usr/local -name "ufo" -type d | head -n 1) && \
+# Discovery logic 
+RUN JEDI_BASE_DIR=$(find /usr/local -name "ufo" -type d -path "*/dist-packages/*" | head -n 1) && \
     JEDI_PATH=$(dirname "$JEDI_BASE_DIR") && \
-    echo "export PYTHONPATH=$JEDI_PATH:\$PYTHONPATH" >> /etc/bash.bashrc
+    # 1. Update the system-wide bashrc for future use
+    echo "export PYTHONPATH=$JEDI_PATH:\$PYTHONPATH" >> /etc/bash.bashrc && \
+    # 2. Export to the CURRENT shell session so verification works
+    export PYTHONPATH="$JEDI_PATH:$PYTHONPATH" && \
+    # 3. Fail-fast verification
+    python3 -c "import ufo; print('✅ JEDI UFO found at:', ufo.__file__)"
 EOF_DOCKER
 
         docker build -t aiesda_jedi:${JEDI_VERSION} -t aiesda_jedi:latest "$BUILD_WORKSPACE"
