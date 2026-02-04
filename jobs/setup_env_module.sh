@@ -2,6 +2,8 @@
 # ==============================================================================
 # Environment Modules Availability Check & Setup
 # ==============================================================================
+# setup_env_module.sh
+
 
 setup_modules() {
     echo "🔍 Checking for Environment Modules..."
