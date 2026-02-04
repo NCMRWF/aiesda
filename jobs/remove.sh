@@ -79,6 +79,12 @@ SPECIFIC_BUILD="${BUILD_ROOT}/${PROJECT_NAME}_build_${TARGET_VERSION}"
 # Path to requirements inside the build area (adjust based on your asset sync logic)
 BUILD_REQUIREMENTS="${SPECIFIC_BUILD}/lib/aiesda/requirements.txt"
 
+# GUARD: If there's no build dir and no module file, nothing exists to wipe.
+if [[ ! -d "$SPECIFIC_BUILD" ]] && [[ ! -f "$PKG_MODULE_FILE" ]]; then
+    echo "✅ v${TARGET_VERSION} is already clean (never built). Moving on..."
+    exit 0
+fi
+
 # 2. Extract JEDI Version and Dependencies from the TARGET BUILD requirements
 if [ -f "$BUILD_REQUIREMENTS" ]; then
     # Extracts the version number
