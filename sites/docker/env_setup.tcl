@@ -25,7 +25,7 @@ if { [file exists $version_file] } {
 # 3. Dependency Check: Load the JEDI container bridge module
 # The version is passed from the installer's JEDI_VERSION detection
 set jedi_ver $env(JEDI_VERSION)
-set aiesda_root	 "$env(HOME)/build/aiesda_build_$env(aiesda_ver)"
+set aiesda_root	 "$env(HOME)/build/aiesda_build_$aiesda_ver"
 set aiesda_bin   \$aiesda_root/bin"
 
 if { [module-info mode load] } {
