@@ -94,9 +94,14 @@ RUN apt-get update && apt-get install -y python3-pip libeccodes-dev build-essent
 WORKDIR /app
 COPY requirements.txt .
 RUN python3 -m pip install --no-cache-dir -r requirements.txt --break-system-packages
-# Discovery logic 
-RUN JEDI_BASE_DIR=$(find /usr/local -name "ufo" -type d -path "*/dist-packages/*" | head -n 1) && \
+# Discovery logic (Improved Robustness)
+# Discovery logic (High Precision)
+RUN JEDI_BASE_DIR=$(find /usr/local -name "ufo" -type d -exec test -e "{}/__init__.py" \; -print | head -n 1) && \
+    if [ -z "$JEDI_BASE_DIR" ]; then \
+        echo "❌ ERROR: Valid 'ufo' package not found in /usr/local" && exit 1; \
+    fi && \
     JEDI_PATH=$(dirname "$JEDI_BASE_DIR") && \
+    echo "🔍 Found JEDI JEDI_PATH: $JEDI_PATH" && \
     # 1. Update the system-wide bashrc for future use
     echo "export PYTHONPATH=$JEDI_PATH:\$PYTHONPATH" >> /etc/bash.bashrc && \
     # 2. Export to the CURRENT shell session so verification works
