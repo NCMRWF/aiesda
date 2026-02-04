@@ -120,27 +120,40 @@ OLD_JEDI_INSTALLED=$JEDI_VERSION
 
 if [[ "$SITE_NAME" == "docker" ]] && [[ "$NEW_JEDI_REQ" != "$OLD_JEDI_INSTALLED" ]]; then
     echo "⚠️  Docker & JEDI version mismatch detected ($OLD_JEDI_INSTALLED -> $NEW_JEDI_REQ)."
-    if [[ -t 0 && "$JEDI_VERSION" != "unknown" ]]; then
+    if [[ -t 0 ]]; then
         echo ""
-        echo "❓ JEDI Component Detected (v${JEDI_VERSION})"
-        read -p "Do you also want to remove the associated JEDI Docker image and bridge? (y/N): " confirm_jedi
-        DO_FULL_WIPE="true"
+       	echo "❓ JEDI Component Detected (v${JEDI_VERSION})"
+       	read -p "Do you also want to remove the associated JEDI Docker image and bridge? (y/N): " confirm_jedi
+       	DO_FULL_WIPE="true"
+    else
+    	if [[ "$JEDI_VERSION" == "unknown" ]]; then
+		confirm_jedi="y"
+	else
+		confirm_jedi="n"
+    	fi
     fi
 fi
 
 if [[ "$DO_FULL_WIPE" == "true" ]]; then
     # Remove Docker Image
+    trap 'rm -f .docker_cleaning' EXIT SIGINT SIGTERM
     if command -v docker &>/dev/null; then
         IMAGE_ID=$(docker images -q "$JEDI_IMAGE")
         if [ -n "$IMAGE_ID" ]; then
             echo "🐳 Removing Docker image: $JEDI_IMAGE"
-            docker rmi -f "$IMAGE_ID"
-            pid=$!
+	    # 1. Create the flag
+            touch .docker_cleaning
+            # 2. RUN IN BACKGROUND and remove flag when finished
+            (docker rmi -f "$IMAGE_ID" &>/dev/null; rm -f .docker_cleaning) &
             spin='-\|/'
-            while kill -0 $pid 2>/dev/null; do
-                i=$(( (i+1) %4 )); printf "\b${spin:$i:1}"; sleep .1
-            done
-            echo " ✅ Done."
+	    i=0
+	    # Loop as long as the flag file exists
+	    while [ -f .docker_cleaning ]; do
+	       i=$(( (i+1) % 4 ))
+	       printf "\r [%s] Processing cleanup..." "${spin:$i:1}"
+	       sleep .1
+	    done
+            echo " Docker image cleaning ✅ Done."
         fi
     fi
 

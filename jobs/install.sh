@@ -94,7 +94,8 @@ else
     export PKG_ROOT="$JOBS_DIR"
 fi
 options $(echo "$@" | tr "=" " ")
-export PKG_NAME=${PKG_ROOT##*/:-"aiesda"}
+PKG_NAME=${PKG_ROOT##*/}
+export PKG_NAME=${PKG_NAME:-"aiesda"}
 PROJECT_NAME="${PKG_NAME}"
 PROJECT_ROOT="${PKG_ROOT}"
 SITE_NAME=${SITE_NAME:-"docker"}
@@ -123,8 +124,10 @@ AIESDA_INSTALLED_ROOT="${BUILD_DIR}"
 sed -i '/# >>> AIESDA_JEDI_SETUP >>>/,/# <<< AIESDA_JEDI_SETUP <<< /d' ~/.bashrc
 # Uninstall pre-existing build copies of the same version number.
 echo "♻️  Wiping existing installation for v$VERSION..."
-bash $JOBS_DIR/remove.sh -v "$VERSION" >/dev/null 2>&1
-show_spinner $! "cleanup"
+if [[ -t 0 ]]; then
+	echo "n" | bash $JOBS_DIR/remove.sh -v "$VERSION" >/dev/null 2>&1
+	show_spinner $! "cleanup"
+fi
 ###########################################################################################
 # 1.2 Dynamically extract NATIVE_BLOCKS and COMPLEX_BLOCKS from requirements.txt
 ###########################################################################################

@@ -43,7 +43,8 @@ else
     export PKG_ROOT="$JOBS_DIR"
 fi
 options $(echo "$@" | tr "=" " ")
-export PKG_NAME=${PKG_ROOT##*/:-"aiesda"}
+PKG_NAME=${PKG_ROOT##*/}
+export PKG_NAME=${PKG_NAME:-"aiesda"}
 PROJECT_NAME="${PKG_NAME}"
 PROJECT_ROOT="${PKG_ROOT}"
 SITE_NAME=${SITE_NAME:-"docker"}
@@ -84,13 +85,14 @@ echo "✅ Target Version set to: $NEW_VER"
 echo "🏗️  Executing Out-of-Source Installation..."
 # We pipe 'n' to install.sh in case it asks for sudo/interactive prompts 
 # (assuming your environment is already pre-configured)
-bash install.sh -v "${NEW_VER}" -s "${SITE_NAME}"
+bash ${JOBS_DIR}/install.sh -v "${NEW_VER}" -s "${SITE_NAME}"
 
 # ---------------------------------------------------------
 # 3. ARCHITECTURE VERIFICATION
 # ---------------------------------------------------------
 echo "🧐 Verifying 'Away' File System..."
 
+echo ${PROJECT_NAME}
 LOG_BASE="${HOME}/logs/$(date +%Y/%m/%d)/${PROJECT_NAME}/${NEW_VER}"
 BUILD_DIR="${HOME}/build/${PROJECT_NAME}_build_${NEW_VER}"
 
