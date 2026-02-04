@@ -304,10 +304,6 @@ mkdir -p $(dirname "${PKG_MODULE_FILE}")
 cat << EOF_MODULE > "${PKG_MODULE_FILE}"
 #%Module1.0
 ## AIESDA v${VERSION} (${SITE_NAME} environment)
-EOF_MODULE
-
-# Append the core Python/Library paths
-cat << EOF_MODULE >> "${PKG_MODULE_FILE}"
 
 set version      ${VERSION}
 set aiesda_root  ${BUILD_DIR}
@@ -316,11 +312,14 @@ setenv           AIESDA_VERSION  \$version
 setenv           AIESDA_ROOT     \$aiesda_root/lib/aiesda
 setenv           AIESDA_NML      \$aiesda_root/lib/aiesda/nml
 setenv           AIESDA_YAML     \$aiesda_root/lib/aiesda/yaml
+EOF_MODULE
 
 # Inject the site-specific TCL snippet
 if [ -f "sites/${SITE_NAME}/env_setup.tcl" ]; then
     cat "sites/${SITE_NAME}/env_setup.tcl" >> "${PKG_MODULE_FILE}"
 fi
+# Append the core Python/Library paths
+cat << EOF_MODULE >> "${PKG_MODULE_FILE}"
 
 # The main site-packages location for the build
 prepend-path     PYTHONPATH      \$aiesda_root/lib
