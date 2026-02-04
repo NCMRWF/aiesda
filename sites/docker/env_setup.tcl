@@ -15,7 +15,7 @@ if { [is-loaded jedi/$jedi_ver] == 0 } {
 # 2. Pathing for the Docker Wrapper
 # In Docker mode, we often use a 'bin' directory for shell wrappers 
 # that translate local commands into 'docker exec' calls.
-set aiesda_bin $env(BUILD_DIR)/bin
+set aiesda_bin $aiesda_root/bin
 
 if { [file isdirectory $aiesda_bin] } {
     prepend-path PATH $aiesda_bin
