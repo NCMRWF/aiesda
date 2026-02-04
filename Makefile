@@ -56,6 +56,9 @@ archive:
 jedidocker:
 	@bash jobs/jedi_docker_build.sh
 
+jedilocal:
+	@bash jobs/jedi_local_build.sh
+
 install:
 	@$(MAKE) check-paths
 	@bash jobs/install.sh --site $(SITE)
