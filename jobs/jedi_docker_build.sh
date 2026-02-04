@@ -152,15 +152,23 @@ if ! docker ps &>/dev/null; then
     echo "Please ensure Docker Desktop is started and WSL integration is enabled."
     exit 1
 fi
-# Mounts the current directory AND the AIESDA install root for full integration
+
+# Inside jobs/jedi_docker_build.sh
+mkdir -p "${BUILD_DIR}/bin"
+
+cat << EOF > "${BUILD_DIR}/bin/jedi-run"
+#!/bin/bash
+# AIESDA JEDI Bridge Wrapper
+# Redirects local python execution into the JEDI Docker Container
 docker run -it --rm \\
-    -v "\$(pwd):/app/work" \\
-    -v "${AIESDA_INSTALLED_ROOT}/lib:/app/lib" \\
-    -w /app/work \\
-    -e PYTHONPATH="/app/lib:/app/lib/aiesda/pylib:/app/lib/aiesda/pydic:\$PYTHONPATH" \\
-    aiesda_jedi:${JEDI_VERSION} "\$@"
+    -v "\$(pwd):/home/aiesda" \\
+    -v "${BUILD_DIR}:/app_build" \\
+    --env PYTHONPATH="/app_build/lib:\$PYTHONPATH" \\
+    aiesda_jedi:${VERSION} "\$@"
 EOF
-chmod +x "${AIESDA_BIN_DIR}/jedi-run"
+
+chmod +x "${BUILD_DIR}/bin/jedi-run"
+
 
 # --- 3. Module Generation ---
 mkdir -p "$(dirname "${JEDI_MODULE_FILE}")"
