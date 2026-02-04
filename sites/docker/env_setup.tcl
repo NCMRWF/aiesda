@@ -6,11 +6,20 @@
 # The version is passed from the installer's JEDI_VERSION detection
 set jedi_ver $env(JEDI_VERSION)
 
-if { [is-loaded jedi/$jedi_ver] == 0 } {
-    # If the JEDI module is available, load it. 
-    # This module usually provides the 'jedi-run' command.
-    catch { module load jedi/$jedi_ver }
+if { [module-info mode load] } {
+    # Check if the modulefile exists before trying to load it
+    if { [file exists "$::env(HOME)/modulefiles/jedi/$jedi_ver"] } {
+        if { [is-loaded jedi/$jedi_ver] == 0 } {
+            # If the JEDI module is available, load it. 
+            # This module usually provides the 'jedi-run' command.
+            catch { module load jedi/$jedi_ver }
+            }
+    } else {
+        # Fallback for environments where the bridge is handled differently
+        setenv JEDI_METHOD "manual"
+    }
 }
+
 
 # 2. Pathing for the Docker Wrapper
 # In Docker mode, we often use a 'bin' directory for shell wrappers 
@@ -32,13 +41,3 @@ proc ModulesHelp { } {
     puts stderr "Method: jedi-run (Container Bridge)"
 }
 
-# 5. Provision for manual JEDI run
-if { [module-info mode load] } {
-    # Check if the modulefile exists before trying to load it
-    if { [file exists "$::env(HOME)/modulefiles/jedi/latest"] } {
-        module load jedi/latest
-    } else {
-        # Fallback for environments where the bridge is handled differently
-        setenv JEDI_METHOD "manual"
-    }
-}
