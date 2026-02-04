@@ -354,7 +354,7 @@ EOF_MODULE
 # --- 10. Testing Environment ---
 ###########################################################
 echo "🧪 Running Post-Installation Tests..."
-DOTEST = true
+DOTEST=true
 if [[ "${DOTEST}" == true ]]; then
     # Initialize modules if they aren't already
     if [ -f /usr/share/modules/init/bash ]; then
