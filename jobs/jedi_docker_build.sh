@@ -123,7 +123,7 @@ fi
 
 # We use backslashes to escape variables we want to stay literal in the file
 docker run -it --rm \\
-    -v "\$(pwd):/home/aiesda" \\
+	-v "\$(pwd):/home/aiesda" \\
     -v "${BUILD_DIR}:/app_build" \\
     -e PYTHONPATH="/app_build/lib:/app_build/lib/aiesda/pylib:/app_build/lib/aiesda/pydic:\$PYTHONPATH" \\
     -w /home/aiesda \\
