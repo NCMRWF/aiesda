@@ -126,8 +126,10 @@ sed -i '/# >>> AIESDA_JEDI_SETUP >>>/,/# <<< AIESDA_JEDI_SETUP <<< /d' ~/.bashrc
 # Uninstall pre-existing build copies of the same version number.
 echo "♻️  Wiping existing installation for v$VERSION..."
 if [[ -t 0 ]]; then
-	echo "n" | bash $JOBS_DIR/remove.sh -v "$VERSION" >/dev/null 2>&1
-	show_spinner $! "cleanup"
+	echo "n" | bash $JOBS_DIR/remove.sh -v "$VERSION" >/dev/null 2>&1 &
+	REMOV_PID=$!
+	show_spinner $REMOV_PID "cleanup"
+	wait $REMOV_PID
 fi
 ###########################################################################################
 # 1.2 Dynamically extract NATIVE_BLOCKS and COMPLEX_BLOCKS from requirements.txt
