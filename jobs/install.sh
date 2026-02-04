@@ -342,7 +342,8 @@ EOF_MODULE
 # --- 10. Testing Environment ---
 ###########################################################
 echo "🧪 Running Post-Installation Tests..."
-(
+DOTEST = "true"
+if [[ DOTEST == "true" ]]; then
     # Initialize modules if they aren't already
     if [ -f /usr/share/modules/init/bash ]; then
         source /usr/share/modules/init/bash
@@ -372,9 +373,7 @@ echo "🧪 Running Post-Installation Tests..."
             python3 -c "import ufo; print('✅ Native Verified: JEDI modules linked.')"
         fi
     fi
-)
-show_spinner $! "environment testing"
-
+fi
 ###########################################################
 # --- 11. Final Summary ---
 ###########################################################
@@ -388,12 +387,5 @@ exit 0
 ###########################################################
 ###	End of the file install.sh		        ###
 ###########################################################
-
-
-
-
-
-
-
 
 
