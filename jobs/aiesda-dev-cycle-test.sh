@@ -111,11 +111,11 @@ echo "🐍 Testing Python Namespace and CLI..."
     module load "${PROJECT_NAME}/${NEW_VER}"
     
     # Check if the CLI is in the PATH
-    if command -v aiesda-run >/dev/null 2>&1; then
-        echo "✅ CLI 'aiesda-run' is in PATH."
+    if command -v jedi-run >/dev/null 2>&1; then
+        echo "✅ CLI 'jedi-run' is in PATH."
         aiesda-run --status
     else
-        echo "❌ CLI 'aiesda-run' NOT found."
+        echo "❌ CLI 'jedi-run' NOT found."
         exit 1
     fi
 )
