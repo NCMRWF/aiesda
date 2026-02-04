@@ -94,11 +94,15 @@ else
     export PKG_ROOT="$JOBS_DIR"
 fi
 options $(echo "$@" | tr "=" " ")
+<<<<<<< HEAD
 PKG_NAME=${PKG_ROOT##*/}
+=======
+PKG_NAME=$(basename "${PKG_ROOT}")
+>>>>>>> 24efe9bd08e291e0bf5c59d89cf7cad96b4984df
 export PKG_NAME=${PKG_NAME:-"aiesda"}
 PROJECT_NAME="${PKG_NAME}"
 PROJECT_ROOT="${PKG_ROOT}"
-SITE_NAME=${SITE_NAME:-"docker"}
+export SITE_NAME=${SITE_NAME:-"docker"}
 HOST=$(hostname)
 REQUIREMENTS="$PROJECT_ROOT/requirements.txt"
 VERSION=$(cat ${PROJECT_ROOT}/VERSION 2>/dev/null | tr -d '[:space:]' | sed 's/\.0\+/\./g')

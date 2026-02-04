@@ -38,7 +38,8 @@ else
     export PKG_ROOT="$JOBS_DIR"
 fi
 options $(echo "$@" | tr "=" " ")
-export PKG_NAME=${PKG_ROOT##*/:-"aiesda"}
+PKG_NAME=$(basename "${PKG_ROOT}")
+export PKG_NAME=${PKG_NAME:-"aiesda"}
 PROJECT_NAME="${PKG_NAME}"
 PROJECT_ROOT="${PKG_ROOT}"
 SITE_NAME=${SITE_NAME:-"docker"}

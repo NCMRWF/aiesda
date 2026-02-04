@@ -43,7 +43,11 @@ else
     export PKG_ROOT="$JOBS_DIR"
 fi
 options $(echo "$@" | tr "=" " ")
+<<<<<<< HEAD
 PKG_NAME=${PKG_ROOT##*/}
+=======
+PKG_NAME=$(basename "${PKG_ROOT}")
+>>>>>>> 24efe9bd08e291e0bf5c59d89cf7cad96b4984df
 export PKG_NAME=${PKG_NAME:-"aiesda"}
 PROJECT_NAME="${PKG_NAME}"
 PROJECT_ROOT="${PKG_ROOT}"
@@ -124,7 +128,7 @@ echo "🐍 Testing Python Namespace and CLI..."
 # ---------------------------------------------------------
 echo "🧹 Testing Surgical Uninstaller..."
 # We provide 'n' to avoid deleting the Docker image during every dev test
-echo "n" | bash remove.sh -v "${NEW_VER}" -s "${SITE_NAME}"
+echo "n" | bash ${JOBS_DIR}/remove.sh -v "${NEW_VER}" -s "${SITE_NAME}"
 
 if [ ! -d "$BUILD_DIR" ]; then
     echo "✅ Cleanup verified: $BUILD_DIR is gone."
