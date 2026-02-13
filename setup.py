@@ -35,9 +35,12 @@ setup(
     description="Artificial Intelligence based Earth System Data Assimilation",
     author="gibies",
 
-    # Identify the hierarchy using the find_packages to ensures all sub-packages
-    # such as ["aiesda", "aiesda.pylib", "aiesda.pydic", "aiesda.scripts"]  are accounted.
-    packages=find_packages(where=".") + ["aiesda"],
+    # We manually define the core 'aiesda' package and use find_packages 
+    # to grab everything inside pylib and pydic.
+    packages=["aiesda"] + [f"aiesda.{p}" for p in find_packages(where="pylib")] + \
+                          [f"aiesda.{p}" for p in find_packages(where="pydic")] + \
+                          ["aiesda.pylib", "aiesda.pydic", "aiesda.scripts"],
+
 
     # Mapping namespaces to physical directories
     # Note: "." maps the base 'aiesda' to the current directory for package_data

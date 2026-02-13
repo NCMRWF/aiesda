@@ -1,5 +1,6 @@
 # aiesda/__init__.py
 import os
+from .aidaconf import AIESDAConfig
 
 # 1. Read Version from the VERSION file
 _pkg_root = os.path.dirname(os.path.abspath(__file__))
@@ -13,8 +14,8 @@ else:
 
 # 2. Expose AIESDAConfig from pylib.aidaconf
 # This allows users to do: import aiesda; config = aiesda.AIESDAConfig()
-try:
-    from .pylib.aidaconf import AIESDAConfig
-except ImportError:
-    # This prevents the package from crashing if dependencies aren't met yet
-    pass
+#try:
+#    from .pylib.aidaconf import AIESDAConfig
+#except ImportError:
+#    # This prevents the package from crashing if dependencies aren't met yet
+#    pass

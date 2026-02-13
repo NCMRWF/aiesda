@@ -23,7 +23,7 @@ AIESDA (Artificial Intelligence based Earth System Data Assimilation) is a next-
 ```bash
 git clone https://github.com/NCMRWF/aiesda.git
 cd aiesda
-./install.sh
+make install
 
 ```
 # Package directory structure after installation
@@ -57,6 +57,71 @@ jedi_build_2026.1/
     └─── ...
     
 ```
+
+## 🛠 Management & Automation (Makefile)
+
+The project utilizes a centralized `Makefile` to handle the development lifecycle. This ensures that the source area remains clean and that builds are site-aware (HPC vs. Local).
+
+### ⚙️ Configuration Variables
+Set these variables at runtime to override defaults:
+* **`SITE`**: Target environment (`docker` [default] or `arunika`).
+* **`MSG`**: Custom commit message for releases.
+
+---
+
+## 🚀 Available Commands
+
+<table width="100%">
+  <thead>
+    <tr>
+      <th align="left">Command</th>
+      <th align="left">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>make help</code></td>
+      <td>Displays the interactive help menu.</td>
+    </tr>
+    <tr>
+      <td><code>make sync</code></td>
+      <td>Pulls latest source. Handles SSH tunnel on <b>elogin</b> nodes.</td>
+    </tr>
+    <tr>
+      <td><code>make install</code></td>
+      <td>Builds and installs the package to the "Away" directory.</td>
+    </tr>
+    <tr>
+      <td><code>make clean</code></td>
+      <td>Surgically removes the current version and build artifacts.</td>
+    </tr>
+    <tr>
+      <td><code>make update</code></td>
+      <td><b>Sync → Clean → Install</b>. The standard daily refresh.</td>
+    </tr>
+    <tr>
+      <td><code>make release</code></td>
+      <td><b>Test → Bump Version → Archive</b>. Production push to Git.</td>
+    </tr>
+    <tr>
+      <td><code>make test</code></td>
+      <td>Runs the <code>aiesda-dev-cycle-test.sh</code> suite.</td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+---
+
+## 📖 Usage Examples
+
+### 1. Daily Development Sync
+To synchronize your local environment with the latest remote changes:
+```bash
+make update SITE=arunika
+```
+
 ## 🚦 ***Quick Start***
 ```Python
 
