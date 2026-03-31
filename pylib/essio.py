@@ -1,12 +1,14 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Migrated to Python 3 for AIESDA Project
 Created on Wed Jan 23 12:56:36 2019
-
 @author: gibies
 """
-from __future__ import print_function
-import os,sys
+
+import os
+import sys
+
 CURR_PATH=os.path.dirname(os.path.abspath(__file__))
 PKGHOME=os.environ.get('PKGHOME',os.path.dirname(CURR_PATH))
 PKGNAME=os.path.basename(PKGHOME)
@@ -19,7 +21,31 @@ sys.path.append(NML)
 PALETTE=os.environ.get('PYNGL_COLORMAPS',PKGHOME+"/palette")
 SUBTYPNML=NML+"/obs_subtype.nml"
 
-diaglev=int(os.environ.get('GEN_MODE',0))
+import numpy 
+import xarray
+import pandas
+import iris
+import iris.analysis
+from typing import Optional, List, Union
+
+# Specialised Plotting & Mesh Imports
+HAS_GEOVISTA = False
+try:
+    import geovista
+    import geovista.theme
+    import pyvista
+    from iris.experimental.ugrid import PARSE_UGRID_ON_LOAD
+    HAS_GEOVISTA = True
+except ImportError:
+    print("Warning: geovista/pyvista not found. Unstructured plotting disabled.")
+
+# Legacy support check
+try:
+    import pygrib
+except ImportError:
+    print("Warning: pygrib not found. GRIB support limited.")
+
+diaglev = int(os.environ.get('GEN_MODE', 0))
 def errprint(*args, **kwargs):
     if diaglev > 0: print(*args, file=sys.stderr, **kwargs)
 
@@ -29,7 +55,7 @@ import obslib
 import pplib
 import vardic
 import glob,datetime
-import Nio, Ngl
+#import Nio, Ngl
 #import netCDF4
 import matplotlib
 matplotlib.use('Agg')
@@ -39,17 +65,11 @@ import matplotlib.colors as colors
 import matplotlib.cm as mplcm
 from mpl_toolkits.basemap import Basemap, shiftgrid, addcyclic
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-import pandas
-import numpy
 import domaindic
 import math
-import xarray
-import pygrib
-import iris
 from iris.util import new_axis
 import iris_grib
 import umrlib
-
 
 ####################################################
 #import numpy.core.multiarray
