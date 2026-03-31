@@ -88,6 +88,21 @@ class MithunaInterface:
         }
 
 
+class LFRicInterface:
+    def __init__(self, config=None):
+        from iris.experimental.ugrid.load import PARSE_UGRID_ON_LOAD
+        self.ugrid_context = PARSE_UGRID_ON_LOAD
+
+    def prepare_state(self, raw_lfric_path):
+        import iris
+        # Using the context manager we saw in the tutorial
+        with self.ugrid_context.context():
+            cubes = iris.load(raw_lfric_path)
+        
+        # Convert to xarray for JEDI if needed
+        import xarray
+        standardized_ds = xarray.pycompat.from_iris(cubes)
+        return standardized_ds
 
 
 
