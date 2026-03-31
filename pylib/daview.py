@@ -1,16 +1,35 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Migrated daview.py for AIESDA Project
 Created on Wed Jan 23 12:56:36 2019
-
 @author: gibies
 """
 
-#############################################################################################################################
-###  Merged from imdaanowcast package
-#############################################################################################################################
-from __future__ import print_function
-import os,sys
+import os
+import sys
+import numpy 
+import xarray
+import pandas
+import iris
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+# Detect Modern Mesh Stack
+HAS_GEOVISTA = False
+try:
+    import geovista as gv
+    from iris.experimental.ugrid import PARSE_UGRID_ON_LOAD
+    HAS_GEOVISTA = True
+except ImportError:
+    print("Warning: GeoVista/UGRID stack not found. Falling back to 2D Cartopy.")
+
+# Use Agg for headless HPC environments
+import matplotlib
+matplotlib.use('Agg')
+
 CURR_PATH=os.path.dirname(os.path.abspath(__file__))
 PKGHOME=os.environ.get('PKGHOME',os.path.dirname(CURR_PATH))
 PKGNAME=os.path.basename(PKGHOME)
@@ -34,7 +53,7 @@ import obslib
 import pplib
 import vardic
 import glob,datetime
-import Nio, Ngl
+#import Nio, Ngl
 #import netCDF4
 import matplotlib
 matplotlib.use('Agg')
@@ -45,8 +64,6 @@ from matplotlib.colors import Normalize
 import matplotlib.cm as mplcm
 from mpl_toolkits.basemap import Basemap, shiftgrid, addcyclic
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-import pandas
-import numpy
 import domaindic
 import math
 #import geocat.datafiles as gdf
@@ -55,8 +72,6 @@ import math
 
 import cartopy
 import cartopy.crs as ccrs
-import xarray
-import iris
 from iris.util import new_axis
 import essio
 
