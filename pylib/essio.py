@@ -101,6 +101,15 @@ def datfr_max_indx(datfr,colnam):
 	indx=datfr[datfr[colnam]==datfr[colnam].max()].index[0]
 	return(indx)
 
+def plot_mesh_3d(cube: iris.cube.Cube, cmap='balance', show_edges=True):
+    """Specialised GeoVista 3D Plotter for LFRic Mesh."""
+    if not HAS_GEOVISTA: return
+    plotter = gv.GeoPlotter()
+    mesh = gv.Transform.from_unstructured(cube)
+    plotter.add_mesh(mesh, cmap=cmap, show_edges=show_edges)
+    plotter.add_coastlines(color='white')
+    plotter.show()
+	
 def datfr_colocate(datset,datframe,gridsize,lon,lat,lev=None,time=None,datfrlat="Latitude",datfrlon="Longitude",varlst=None):
 	hlfwdth=gridsize/2
 	datframe=datframe.assign(colocdist=None)
