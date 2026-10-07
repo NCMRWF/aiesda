@@ -24,17 +24,17 @@ varcx_surf_nml=OBSNML+"/varcx_surf_nml"
 varcx_uair_nml=OBSNML+"/varcx_uair_nml"
 import obslib
 import obsdic
-import obstore
+#import obstore
 import fixheader
 import ecbufr
 #import ncbufr
 #import varobs
 #import varcx
 #import fsoi
-import symobs
-import daview
-import essio
-import sqlobs
+#import symobs
+#import daview
+#import essio
+#import sqlobs
 #import sqlodb
 #import obsgui
 import matplotlib
@@ -76,8 +76,8 @@ def DataFrame():
 def reset_index(data):
 	return(obslib.reset_index(data))
 
-def ecbufr_decode_files(inpath,Tnode,slctstr,nmlfile,eleindxmaptbl=None,elemlist=None,subtype=None,keyfieldlst=[]):
-	return(ecbufr.bufr_decode_files(inpath,Tnode,slctstr,nmlfile,eleindxmaptbl,elemlist=elemlist,subtype=subtype,keyfieldlst=keyfieldlst))
+def ecbufr_decode_files(inpath,Tnode,slctstr,nmlfile,eleindxmaptbl=None,elemlist=None,subtype=None,keyfieldlst=None):
+	return(ecbufr.bufr_decode_files(inpath,Tnode,slctstr,nmlfile,eleindxmaptbl=eleindxmaptbl,elemlist=elemlist,subtype=subtype,keyfieldlst=keyfieldlst))
 
 def ncbufr_decode_files(inpath,Tnode,slctstr,nmlfile):
 	return(ncbufr.bufr_decode_files(inpath,Tnode,slctstr,nmlfile))
@@ -97,8 +97,8 @@ diaglev=int(os.environ.get('GEN_MODE',0))
 def errprint(*args, **kwargs):
     if diaglev > 0: print(*args, file=sys.stderr, **kwargs)
 
-def pydate(datestring,hour=0,minute=0,second=0):
-    return(obslib.pydate(datestring,hour,minute,second))
+def pydate(datestring=None,cylcdate=None,date=None,time=None,year=None,month=1,day=1,hour=0,minute=0,second=0):
+    return(obslib.pydate(datestring=datestring,cylcdate=cylcdate,date=date,time=time,year=year,month=month,day=day,hour=hour,minute=minute,second=second))
 
 def cylcdate(datetime):
     return(obslib.cylcdate(datetime))
@@ -312,12 +312,12 @@ def obs_latlon_plot(datapath,plotpath,nmlpath=OBSNML,maxindx=MAXINDX,obstypelist
         obstypedic=obsdic.obstype[obstype]
         filename=obstypedic["filename"]
         data_file=datapath+"/"+filename
-	if pltnam is None:
-        	plotfile=plotpath+"/"+filename+title+".png"
-        	textfile=plotpath+"/"+filename+title+".txt"
-	else:
-		plotfile=plotpath+"/"+pltnam+".png"
-        	textfile=plotpath+"/"+pltnam+".txt"
+        if pltnam is None:
+            plotfile=plotpath+"/"+filename+title+".png"
+            textfile=plotpath+"/"+filename+title+".txt"
+        else:
+            plotfile=plotpath+"/"+pltnam+".png"
+            textfile=plotpath+"/"+pltnam+".txt"
         latlon_data=obstore_read_latlon(data_file,fltrkey=fltrkey,maxindx=maxindx)
         obslib.obs_frame_ascii(latlon_data,textfile,option=diaglev)
         figure1=daview.mpl_plot_latlon(latlon_data,plotfile,fltrkey=fltrkey,text=text,title=title)

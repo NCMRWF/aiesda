@@ -1,0 +1,48 @@
+
+import subprocess
+import sys
+import os
+CURR_PATH=os.path.dirname(os.path.abspath(__file__))
+PKGHOME=os.path.dirname(CURR_PATH)
+OBSLIB=os.environ.get('OBSLIB',PKGHOME+"/pylib")
+sys.path.append(OBSLIB)
+OBSDIC=os.environ.get('OBSDIC',PKGHOME+"/pydic")
+sys.path.append(OBSDIC)
+OBSNML=os.environ.get('OBSNML',PKGHOME+"/nml")
+sys.path.append(OBSNML)
+obs_index_nml=OBSNML+"/obs_index_nml"
+odb_index_nml=OBSNML+"/odb_index_nml"
+varobs_nml=OBSNML+"/varobs_nml"
+varcx_surf_nml=OBSNML+"/varcx_surf_nml"
+varcx_uair_nml=OBSNML+"/varcx_uair_nml"
+
+import obsmod
+import obscodc
+import ecbufr
+
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        PDY = sys.argv[1]
+    else:
+        PDY = obsmod.today()
+
+    if len(sys.argv) > 2:
+        CYC = sys.argv[2]
+    else:
+        CYC = "00"
+
+    bufr_filepath=None
+    odb_filepath=None
+    if not bufr_filepath:
+        bufr_filepath = os.getenv("BUFRFILE")
+    if not odb_filepath:
+        odb_filepath = os.getenv("ODB2FILE")
+    ecbufr.get_bufr_subtype_elements(bufr_filepath)
+    exit()
+
+    obscodc.convert_bufr_to_odb(bufr_filepath=bufr_filepath, odb_filepath=odb_filepath, PDY=PDY, CYC=CYC)
+
+    obscodc.odbquery(odbfile,varnolist=varnolist)
+    #copied from python odb2read.py

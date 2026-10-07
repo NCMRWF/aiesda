@@ -17,7 +17,9 @@ sys.path.append(OBSDIC)
 OBSNML=os.environ.get('OBSNML',PKGHOME+"/nml")
 sys.path.append(OBSNML)
 
+import wmocode
 #import obsdic
+import re
 import pandas
 import numpy
 import struct
@@ -253,10 +255,10 @@ def unique_int(array,mfactor=1,missing=numpy.nan):
     intlst=[]
     for elem in array:
         if elem != elem or elem == missing :
-		intlst=intlst	#+[elem]
-	else: 
-           if mfactor > 1 : intlst=intlst+[int(elem/mfactor+0.5)*mfactor]
-           else : intlst=intlst+[int(elem)]
+            intlst=intlst	#+[elem]
+        else:
+            if mfactor > 1 : intlst=intlst+[int(elem/mfactor+0.5)*mfactor]
+            else : intlst=intlst+[int(elem)]
     intlst=unique_list(intlst)
     int_frm=pandas.DataFrame(intlst,columns=["Data"])
     int_arr=int_frm.Data.unique()
@@ -488,59 +490,59 @@ def cylcdate_get_hour(cylc):
 def pydatetime(year,month,day,hour=0,minute=0,second=0):
     return(datetime.datetime(int(year),int(month),int(day),int(hour),int(minute),int(second)))
 
-def pydate(datestring=None,cylcdate=None,date=None,time=None,year=None,month=01,day=01,hour=00,minute=00,second=00):
-	if datestring is not None and len(datestring) > 15 :
-		datestring=str(datestring)
-		print(datestring)
-		year=int(datestring[0:4])
-		month=int(datestring[5:7])
-		day=int(datestring[8:10])
-		hour=int(datestring[11:13])
-		minute=int(datestring[14:16])
-		second=int(datestring[17:19])
-	else:	
-		if datestring is not None: cylcdate=str(datestring)
-	if cylcdate is not None and len(cylcdate) > 8 :
-		cylcdate=str(cylcdate)
-		print(cylcdate)
-		year=int(cylcdate[0:4])
-		month=int(cylcdate[4:6])
-		day=int(cylcdate[6:8])
-		hour=int(cylcdate[9:11])
-		minute=int(cylcdate[11:13])
-		second=int(00)
-	else:
-		if cylcdate is not None: date=str(cylcdate)
-	if date is not None :
-    		datestr=str(date)
-		print(date)
-    		year=int(datestr[0:4])
-    		month=int(datestr[4:6])
-    		day=int(datestr[6:8])
-	if time is not None:
-		time=str(time)
-		print(time)
-		hour=int(time[0:2])
-		minute=int(time[2:4])
-		second=int(time[4:6])
-	if year is not None: 
-		year=int(year)
-	else:
-		year=int(1970)
-		#print("Essential date information is missing:")
-    	month=int(month)
-    	day=int(day)
-	hour=int(hour)
-	minute=int(minute)
-	second=int(second)
-	return(pydatetime(year,month,day,hour,minute,second))
+def pydate(datestring=None,cylcdate=None,date=None,time=None,year=None,month=1,day=1,hour=0,minute=0,second=0):
+    if datestring is not None and len(datestring) > 15 :
+        datestring=str(datestring)
+        print(datestring)
+        year=int(datestring[0:4])
+        month=int(datestring[5:7])
+        day=int(datestring[8:10])
+        hour=int(datestring[11:13])
+        minute=int(datestring[14:16])
+        second=int(datestring[17:19])
+    else:
+        if datestring is not None: cylcdate=str(datestring)
+    if cylcdate is not None and len(cylcdate) > 8 :
+        cylcdate=str(cylcdate)
+        print(cylcdate)
+        year=int(cylcdate[0:4])
+        month=int(cylcdate[4:6])
+        day=int(cylcdate[6:8])
+        hour=int(cylcdate[9:11])
+        minute=int(cylcdate[11:13])
+        second=int(00)
+    else:
+        if cylcdate is not None: date=str(cylcdate)
+    if date is not None :
+        datestr=str(date)
+        print(date)
+        year=int(datestr[0:4])
+        month=int(datestr[4:6])
+        day=int(datestr[6:8])
+    if time is not None:
+        time=str(time)
+        print(time)
+        hour=int(time[0:2])
+        minute=int(time[2:4])
+        second=int(time[4:6])
+    if year is not None:
+        year=int(year)
+    else:
+        year=int(1970)
+        #print("Essential date information is missing:")
+    month=int(month)
+    day=int(day)
+    hour=int(hour)
+    minute=int(minute)
+    second=int(second)
+    return(pydatetime(year,month,day,hour,minute,second))
   
-def fmtdatetime(fmtstr,date=None, year=None, month=None, day=None, hour=00, minute=00, second=00):
+def fmtdatetime(fmtstr,date=None, year=None, month=None, day=None, hour=0, minute=0, second=0):
 	DT=pydate(date,year,month,day,hour,minute,second)
 	dtfmted=DT.strftime(fmtstr)
 	return(dtfmted)
 
-def lastday(date=None, year=None, month=None, day=None, hour=00, minute=00, second=00):
+def lastday(date=None, year=None, month=None, day=None, hour=0, minute=0, second=0):
     if date is not None :
         datestr=str(date)
         year=int(datestr[0:4])
@@ -792,23 +794,6 @@ def getopsname(nmlfile,odbname):
         except:opsname=str(odbname)
     return(opsname)
 
-def getodbname(nmlfile,opsname):
-    with open(nmlfile, "r") as nml:
-        try:odbname = str(pandas.read_table(nml, skiprows=None, header=0).query("opsname == @opsname").odbname.values[0])
-        except:odbname=str(opsname)
-    return(odbname)
-
-def get_subtype_name(nmlfile,subtype):
-    with open(nmlfile, "r") as nml:
-        try:name = str(pandas.read_table(nml, skiprows=None, header=0).query("subtype == @subtype").obstypnam.values[0])
-        except:name=str(subtype)
-    return(name)
-
-def get_subtype_code(nmlfile,obstypnam):
-    with open(nmlfile, "r") as nml:
-        try:stypcode = int(pandas.read_table(nml, skiprows=None, header=0).query("obstypnam == @obstypnam").subtype.values[0])
-        except:stypcode=int(0)
-    return(stypcode)
 
 def dfheader(data):
     cnt=len(data.columns.values)
@@ -1005,31 +990,6 @@ def remove_whitespace( x ):
     else:
         return x
 
-def panda_strip(x):
-    r =[]
-    for y in x:
-        if isinstance(y, str):
-            y = y.strip()
-        r.append(y)
-    return(pandas.Series(r))
-
-def get_key_info(nmlfile,key="obsgroup"):
-    #print(nmlfile)
-    nmlinfo=pandas.read_csv(nmlfile, delimiter=':',engine='python')
-    nmlinfo=nmlinfo.apply(panda_strip)
-    #print(nmlinfo)
-    if key in nmlinfo["keys"].values:
-	dicselect=nmlinfo.query("keys == @key")
-	#print(dicselect)
-    	keyinfo=dicselect.iloc[:, 1]
-    	#keyinfo=dicselect["information"]
-  	#keyinfo=getattr(dicselect,"information")
-	#print(keyinfo)
-	keyinfo=keyinfo.values[0]
-    else:
-    	print("Key '"+str(key)+"' not found")
-    	print(nmlinfo["keys"].values)
-    return(keyinfo)
 
 def get_key_list_info(nmlfile,key):
 	strinfo=get_key_info(nmlfile,key)
@@ -1037,18 +997,18 @@ def get_key_list_info(nmlfile,key):
 	return(lstinfo)
 	
 def get_key_dic(keyinfofile,keylist,infodic=None):
-   #print(keyinfofile,keylist,infodic)
-   if infodic is None : infodic={}
-   if os.path.exists(keyinfofile): 
-	#print("Readimng "+keyinfofile)
-    	for key in keylist:
-    		infodic[key]=get_key_info(keyinfofile,key)
-   else:
-	print("Key Info Namelist File is not available")
-	#print("File not found: "+keyinfofile)
-    	#srcdic=obsdic.obstype[obstype]
-    	#infodic=srcdic.copy()
-   return(infodic)
+    #print(keyinfofile,keylist,infodic)
+    if infodic is None : infodic={}
+    if os.path.exists(keyinfofile): 
+        #print("Readimng "+keyinfofile)
+        for key in keylist:
+            infodic[key]=get_key_info(keyinfofile,key)
+    else:
+        print("Key Info Namelist File is not available")
+        #print("File not found: "+keyinfofile)
+        #srcdic=obsdic.obstype[obstype]
+        #infodic=srcdic.copy()
+    return(infodic)
 
 def get_elist(obstypnam,obstypnml,keynml):
 	subtype=get_subtype_code(obstypnml,obstypnam)
@@ -1081,3 +1041,181 @@ def data_thinning(data,cntmax=500000,callsign=None,fillval=NAN_VAL):
 		data=reset_index(data_new,index=None)
 	return(data)
 
+
+def getodbname(nmlfile, opsname):
+    try:
+        df = pandas.read_csv(nmlfile, sep=r"\s+", engine="python")
+        match = df.query("opsname == @opsname")["odbname"]
+        return str(match.values[0]) if not match.empty else str(opsname)
+    except Exception:
+        return str(opsname)
+
+
+def get_subtype_name(nmlfile, subtype):
+    try:
+        df = pandas.read_csv(nmlfile, sep=r"\s+", engine="python")
+        # Ensure comparison works whether subtype is passed as int or str
+        match = df.query("subtype == @subtype or subtype == @subtype_str")[
+            "stname"
+        ] if "stname" in df.columns else df.query("subtype == @subtype")["obstypnam"]
+        return str(match.values[0]) if not match.empty else str(subtype)
+    except Exception:
+        return str(subtype)
+
+
+def get_subtype_code(nmlfile, obstypnam):
+    try:
+        df = pandas.read_csv(nmlfile, sep=r"\s+", engine="python")
+        # Check both column names ('stname' from index or 'obstypnam')
+        col = "stname" if "stname" in df.columns else "obstypnam"
+        match = df.query(f"{col} == @obstypnam")["subtype"]
+        return int(match.values[0]) if not match.empty else 0
+    except Exception:
+        return 0
+
+def panda_strip(x):
+    r = []
+    for y in x:
+        if isinstance(y, str):
+            # Strip whitespace and remove trailing inline comments (e.g., # comment)
+            y = re.sub(r"#.*$", "", y).strip()
+        r.append(y)
+    return pandas.Series(r)
+
+
+def get_key_info(nmlfile, key="obsgroup"):
+    # Convert key to string to match key types reliably
+    key_str = str(key).strip()
+
+    # Peek at the first line to check for headers
+    with open(nmlfile, "r") as f:
+        first_line = ""
+        for line in f:
+            line_str = line.strip()
+            if line_str and not line_str.startswith("#"):
+                first_line = line_str
+                break
+
+    # Determine if 'keys' header exists in the first valid line
+    has_header = "keys" in [
+        col.strip().lower() for col in first_line.split(":")
+    ]
+
+    # Read CSV conditionally based on header presence
+    if has_header:
+        nmlinfo = pandas.read_csv(
+            nmlfile, delimiter=":", comment="#", engine="python"
+        )
+    else:
+        nmlinfo = pandas.read_csv(
+            nmlfile,
+            delimiter=":",
+            comment="#",
+            names=["keys", "information"],
+            engine="python",
+        )
+
+    # Clean whitespace and inline comments across all cells
+    nmlinfo = nmlinfo.apply(panda_strip)
+
+    # Ensure key comparison works across numeric and string representations
+    nmlinfo["keys_str"] = nmlinfo["keys"].astype(str)
+
+    if key_str in nmlinfo["keys_str"].values:
+        dicselect = nmlinfo.query("keys_str == @key_str")
+        keyinfo = dicselect.iloc[0, 1]
+    else:
+        print(f"Key '{key}' not found in {nmlfile}")
+        keyinfo = None
+
+    return keyinfo
+
+
+def get_wmo_subtype_name(descriptors=None):
+    # 2. Query wmo_bufr_seq_index for sequence name
+    wmo_seq_file = os.path.join(OBSNML, "wmo_bufr_seq_index")
+    seq_key = descriptors[0] if descriptors else 307080
+    seq_name = get_key_info(wmo_seq_file, key=seq_key)  # e.g. "Surface_LNDSYB"
+    return seq_name
+
+def get_wmo_obstype(descriptors=None):
+    seq_name = get_wmo_subtype_name(descriptors)
+    obstype, subtype_str = seq_name.split("_", 1)
+    #subtype_str = seq_name.replace(obstype, "").strip()
+    return obstype
+
+def get_wmo_subtype(descriptors=None):
+    seq_name = get_wmo_subtype_name(descriptors)
+    obstype, subtype_str = seq_name.split("_", 1)
+    #subtype_str = seq_name.replace(obstype, "").strip()
+    return subtype_str
+
+def get_elemlist(subtype_str,nmlfile):
+    # 4. Fetch element list using string key matching keys_surface.nml
+    elemlist = get_key_list_info(nmlfile, f"elemlist_{subtype_str}")
+    return elemlist
+
+
+def get_subtype_info_from_descriptor(descriptors):
+    print(descriptors)
+    descriptor_int = int(descriptors)
+    obstype=get_wmo_obstype(descriptors=descriptors)
+    subtype=get_wmo_subtype(descriptors=descriptors)
+    print(subtype)
+    # Retrieve tuple from wmocode dictionary
+    info = wmocode.WMO_DESCRIPTOR_TO_SUBTYPE.get(descriptor_int)
+    return {
+        "obstype"   : obstype,
+        "subtype"   : subtype,
+        "descode"   : descriptor_int,
+        "subtype_code": info[0],
+        "subtype_name": info[1],
+        "elemlist_key": info[2],
+    }
+
+
+"""
+def panda_strip(x):
+    r =[]
+    for y in x:
+        if isinstance(y, str):
+            y = y.strip()
+        r.append(y)
+    return(pandas.Series(r))
+
+def get_key_info(nmlfile,key="obsgroup"):
+    #print(nmlfile)
+    nmlinfo=pandas.read_csv(nmlfile, delimiter=':',engine='python')
+    nmlinfo=nmlinfo.apply(panda_strip)
+    print(nmlinfo)
+    if key in nmlinfo["keys"].values:
+        dicselect=nmlinfo.query("keys == @key")
+        #print(dicselect)
+        keyinfo=dicselect.iloc[:, 1]
+        #keyinfo=dicselect["information"]
+        #keyinfo=getattr(dicselect,"information")
+        #print(keyinfo)
+        keyinfo=keyinfo.values[0]
+    else:
+        print("Key '"+str(key)+"' not found")
+        print(nmlinfo["keys"].values)
+    return(keyinfo)
+
+def getodbname(nmlfile,opsname):
+    with open(nmlfile, "r") as nml:
+        try:odbname = str(pandas.read_table(nml, skiprows=None, header=0).query("opsname == @opsname").odbname.values[0])
+        except:odbname=str(opsname)
+    return(odbname)
+
+def get_subtype_name(nmlfile,subtype):
+    with open(nmlfile, "r") as nml:
+        try:name = str(pandas.read_table(nml, skiprows=None, header=0).query("subtype == @subtype").obstypnam.values[0])
+        except:name=str(subtype)
+    return(name)
+
+def get_subtype_code(nmlfile,obstypnam):
+    with open(nmlfile, "r") as nml:
+        try:stypcode = int(pandas.read_table(nml, skiprows=None, header=0).query("obstypnam == @obstypnam").subtype.values[0])
+        except:stypcode=int(0)
+    return(stypcode)
+"""

@@ -1,0 +1,99 @@
+# WMO BUFR Table D Sequence Descriptors Mapping
+# Format: Descriptor_ID: Variable_Name / Observation_Type
+
+# Category 00: Surface Data (Land)
+# sequence_descriptors:
+  301001: StationID
+  301002: StationName
+  301003: StationType
+  301004: StationElevation
+  301011: StationIdentification_BlockStation
+  301012: StationLocation_LatLonElev
+  301013: StationLocation_HighPrecision
+  301021: FixedSurfaceStation_Header
+  307080: Surface_LNDSYB # SYNOP Land Report
+  307081: Surface_LNDSYB_Auto
+  307082: Surface_LNDSYB_Mob
+  307090: Surface_METAR
+
+# Category 01: Surface Data (Sea)
+  308001: Surface_SHPSYN # Ship Report
+  308002: Surface_BUOY   # Drifting/Moored Buoy
+  308003: Surface_BUOY_Subsurface
+  308004: Surface_RIG
+  308005: Surface_PLATFORM
+  308008: Surface_WAVE_Buoy
+  308009: Surface_CMAN   # Coastal-Marine Automated Network
+
+# Category 02: Vertical Soundings (Other than Satellite)
+  309050: Sounding_TEMP_Land
+  309051: Sounding_TEMP_Ship
+  309052: Sounding_TEMP_Radiosonde
+  309053: Sounding_PILOT_UpperWind
+  309054: Sounding_PILOT_Ship
+  309055: Sounding_WindProfiler
+  309056: Sounding_RASS
+
+# Category 03: Vertical Soundings (Satellite)
+  310001: SatSounding_ATOVS
+  310002: SatSounding_TOVS
+  310008: SatSounding_AIRS_IASI
+  310010: SatSounding_CrIS
+  310011: SatSounding_ATMS
+  310070: SatSounding_GNSS_RO # Radio Occultation
+
+# Category 04: Single Level Upper-Air Data (Other than Satellite)
+  311001: UpperAir_AIREP
+  311002: UpperAir_PIREP
+  311005: UpperAir_AMDAR
+  311009: UpperAir_ACARS
+  311010: UpperAir_E_AMDAR
+
+# Category 05: Single Level Upper-Air Data (Satellite)
+  312001: SatWind_AMV # Atmospheric Motion Vectors
+  312015: SatWind_Scatterometer_ASCAT
+  312016: SatWind_Scatterometer_ScatSat
+  312020: SatWind_Altimeter_DualFreq
+
+# Category 06: Radar Data
+  313001: Radar_SiteHeader
+  313002: Radar_RadialWind
+  313003: Radar_Reflectivity
+  313004: Radar_PrecipitationAccumulation
+
+# Category 07: Synoptic Features
+  314001: Synoptic_TropicalCycloneTrack
+  314002: Synoptic_FrontalSystem
+  314003: Synoptic_ExtraTropicalCyclone
+
+# Category 08: Physical/Chemical Constituents
+  315001: Atmosphere_OzoneProfile
+  315002: Atmosphere_TotalColumnOzone
+  315005: Atmosphere_AerosolOpticalDepth
+  315008: Atmosphere_GreenhouseGas_CO2_CH4
+
+# Category 09: Dispersal Features
+  316001: Plume_VolcanicAsh
+  316002: Plume_ChemicalNuclearRelease
+
+# Category 10 / 12: Oceanographic Data
+  317001: Ocean_TESAC
+  317002: Ocean_Bathythermograph_XBT
+  317003: Ocean_ArgoProfileFloat
+  317005: Ocean_SeaLevel_TideGauge
+  319001: Ocean_SurfaceDriftBuoy
+  319002: Ocean_MooredOceanBuoy
+
+# Category 13 / 14: Hydrological Data
+  320001: Hydro_RiverStage_FlowRate
+  321001: Hydro_RainGauge
+  321005: Hydro_SnowDepth_Profile
+
+# Category 15 / 16: Climatological & Agrometeorological Data
+  322001: Climat_MonthlySummary_CLIMAT
+  322002: Climat_UpperAir_CLIMAT_TEMP
+  323001: Agromet_SoilMoisture_Temp
+
+# Category 18 / 21: Radiative & Environmental Features
+  325001: Solar_Radiation
+  328001: AirQuality_Monitoring_PM25_PM10

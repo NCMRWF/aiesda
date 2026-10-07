@@ -8,30 +8,48 @@ indx	elename	fieldname	datatype
 7	Minute	minute	iValues
 8	Second	second	iValues
 9	SatInst	satelliteInstruments	iVal
-10
-11	SolZen	solarZenithAngle	rValues
-12
-13
-14
-15	LandSeaInd	landOrSeaQualifier	iValues
-16	SurfaceHeight	height	rValues
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27	SatID	satelliteIdentifier	iVal
+10      SatSubPoint     satelliteSubPoint               iValues
+11      SolZen          solarZenithAngle                rValues
+12      SolAzim         solarAzimuthAngle               rValues
+13      SatZen          satelliteZenithAngle            rValues
+14      SatAzim         satelliteAzimuthAngle           rValues
+15      LandSeaInd      landOrSeaQualifier              iValues
+16      SurfaceHeight   height                          rValues
+17      StnPressure     stationPressure                 rValues
+18      AirTemp2m       airTemperatureAt2Meters         rValues
+19      DewPoint2m      dewpointTemperatureAt2Meters    rValues
+20      RelHum2m        relativeHumidityAt2Meters       rValues
+21      WindDir10m      windDirectionAt10Meters         rValues
+22      WindSpeed10m    windSpeedAt10Meters             rValues
+23      UComp10m        uComponentOfWindAt10Meters      rValues
+24      VComp10m        vComponentOfWindAt10Meters      rValues
+25      CloudCover      cloudAmount                     iValues
+26      Visibility      horizontalVisibility            rValues
+27      SatID           satelliteIdentifier             iVal
+36      StationID       stationNumber           iValues
+37      BlockNum        blockNumber             iValues
+43      PastWeather1    pastWeather1            iValues
+44      PresentWeather  presentWeather          iValues
+45      Pressure        stationPressure         rValues
+46      MSLPressure     nonCoordinatePressure   rValues
+47      3HrPressureChg  pressureChange3Hours    rValues
+59      WindDir         windDirection           rValues
+60      WindSpeed       windSpeed               rValues
+61      AirTemp         airTemperature          rValues
+62      DewPoint        dewpointTemperature     rValues
+63      RelHumidity     relativeHumidity        rValues
+64      MaxTemp         maximumTemperature      rValues
+65      MinTemp         minimumTemperature      rValues
 69	CloudOpticalThickness	
+80      CloudCover      cloudAmount             iValues
+103     Precipitation   totalPrecipitationPast1Hour rValues
+105     Visibility      horizontalVisibility    rValues
 130	ScanLine	scanLineNumber	iValues
 131	ScanPosition	fieldOfViewNumber	iValues
 133	SatView	viewingZenithAngle	rValues
 135	SolAzimth	solarAzimuth	rValues
 197	SatZenithAngle	satelliteZenithAngle	rValues
+242     HeightOfStation heightOfStation         rValues
 257	ReceiptYear	typicalYear	iVal
 258	ReceiptMonth	typicalMonth	iVal
 259	ReceiptDay	typicalDay	iVal
@@ -39,8 +57,8 @@ indx	elename	fieldname	datatype
 261	ReceiptMinute	typicalMinute	iVal
 335	SEVIRIBrightnessTemp	brightnessTemperature	rValues
 389	TCWV	totalColumnWaterVapour	rValues
-437	ODBObsType
-438	ODBCodeType
+437     ODBObsType      obstype                 iValues
+438     ODBCodeType     codetype                iValues
 512	BrgtsTmpr1	brightnessTemperature	rValues
 513	BrgtsTmpr2	brightnessTemperature	rValues
 538	rotangle	geometricRotationalAngle	rVal
