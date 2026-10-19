@@ -111,15 +111,16 @@ def get_ecbufr_elist(bufr_filepath,nmlfile=None,obsname=None):
     subtypecode=info.get("subtype_code")
     subtype=info.get("subtype")
     obstype=info.get("obstype")
+    elemlist_key=info.get("elemlist_key")
     obsname=obstype.lower()
     print(obstype)
     #stypcode=obslib.get_subtype_code(nmlfile,subtype)
-    print(subtypecode)
+    print(elemlist_key)
     if nmlfile is None:
         nmlfile = os.environ.get(
             "KEYNMLFILE", os.path.join(OBSNMLDIR, f"keys_{obsname}.nml")
         )
-    elemlist=obslib.get_elemlist(subtype,nmlfile)
+    elemlist=obslib.get_elemlist(nmlfile,info=info,elemlist_key=elemlist_key,subtypecode=subtypecode)
     #print(elemlist)
     return elemlist
 
@@ -237,25 +238,6 @@ def get_ecbufr_fieldlist(bufr_filepath, elemlist=None, nmlfile=None, eleindxmapt
     #print(fieldtable)
     return fieldtable
 
-"""
-def read_element(ibufr, field, count, data, eleindxmaptbl=ECBUFRNML):
-    elename = field.elename
-    fieldname = field.fieldname
-    dtype = get_dtype(fieldname, eleindxmaptbl)
-    
-    if dtype in ["iVal", "rVal"]:
-        data1 = eccodes.codes_get(ibufr, fieldname)
-        data1 = [data1] * count
-    else:
-        data1 = eccodes.codes_get_array(ibufr, fieldname)
-        
-    if len(data1) == 1:
-        data1 = [data1[0]] * count
-        
-    data[elename] = data1
-    return data
-"""
-
 def read_element(ibufr, field, count, data, eleindxmaptbl=ECBUFRNML):
     # Standardize string extraction for raw strings, tuples, dicts, or pandas Series
     if isinstance(field, str):
@@ -285,12 +267,18 @@ def read_element(ibufr, field, count, data, eleindxmaptbl=ECBUFRNML):
     else:
         try:
             data1 = eccodes.codes_get_array(ibufr, fieldname)
+            print(len(data.index), len(data1), count)
+            if len(data1) != count:
+                data1 = [None] * count
+                print(f"{len(data1)} is not maching with expected count {count}")
         except Exception:
             data1 = [None] * count
 
     if len(data1) == 1:
         data1 = [data1[0]] * count
-
+    print(elename)
+    print(data1)
+    print(data)
     data[elename] = data1
     return data
 
@@ -323,7 +311,7 @@ def message_read(ibufr, fieldlist=None, eleindxmaptbl=ECBUFRNML):
 def bufr_decode(input_file, nmlfile, eleindxmaptbl=ECBUFRNML, elemlist=None, subtype=None, fieldlist=None):
     if fieldlist is None:
         fieldlist = get_ecbufr_fieldlist(nmlfile=nmlfile, eleindxmaptbl=eleindxmaptbl, elemlist=elemlist, subtyp=subtype)
-    print(fieldlist)
+    #print(fieldlist)
     frames = []
     with open(input_file, 'rb') as f:
         while True:
@@ -340,13 +328,12 @@ def bufr_decode(input_file, nmlfile, eleindxmaptbl=ECBUFRNML, elemlist=None, sub
         data = pandas.concat(frames, ignore_index=True)
     else:
         data = pandas.DataFrame()
-    print(data)
-    print(subtype)    
-    if subtype is None:
+    if 'subtypecode' not in locals() or subtypecode is None:
         info = get_bufr_descriptors(input_file)
         subtypecode=info.get("subtype_code")
-        print(subtypecode)
+        #print(subtypecode)
     data = data.assign(subtype=[int(subtypecode)] * len(data))
+    #print(data)
     return data
 
 
@@ -356,7 +343,7 @@ def bufr_decode_files(bufr_filepath, Tnode, slctstr, nmlfile, eleindxmaptbl=None
     and returns a combined pandas DataFrame.
     """
     print("inside ecbufr library parent function call")
-    print(subtype)
+    #print(subtype)
     if keyfieldlst is None:
         searchstring = os.path.join(bufr_filepath, slctstr)
         infiles = obslib.globlist(searchstring)
@@ -387,19 +374,44 @@ def bufr_decode_files(bufr_filepath, Tnode, slctstr, nmlfile, eleindxmaptbl=None
     
     frames = []
     for infile in infiles:
-        print(infile)
+        #print(infile)
         data1 = bufr_decode(infile, nmlfile, eleindxmaptbl=eleindxmaptbl, elemlist=elemlist, subtype=subtype,fieldlist=keyfieldlst)
         
-        for field in keyfieldlst:
-            data1 = obslib.frame_window_filter(data1, item=field, minval=minval, maxval=maxval)
+        if not data1.empty and minval is not None and maxval is not None:
+            # Target only coordinate or relevant numeric fields
+            valid_filter_fields = [f for f in ['latitude', 'longitude'] if f in keyfieldlst]
+            for field in valid_filter_fields:
+                data1 = obslib.frame_window_filter(data1, item=field, minval=minval, maxval=maxval)
             
-        print(data1)
         frames.append(data1.copy())
-        
+
     if frames:
         data = pandas.concat(frames, ignore_index=True)
     else:
         data = pandas.DataFrame()
         
     data = obslib.reset_index(data)
+    print(data)
     return data
+
+
+
+
+"""
+def read_element(ibufr, field, count, data, eleindxmaptbl=ECBUFRNML):
+    elename = field.elename
+    fieldname = field.fieldname
+    dtype = get_dtype(fieldname, eleindxmaptbl)
+    
+    if dtype in ["iVal", "rVal"]:
+        data1 = eccodes.codes_get(ibufr, fieldname)
+        data1 = [data1] * count
+    else:
+        data1 = eccodes.codes_get_array(ibufr, fieldname)
+        
+    if len(data1) == 1:
+        data1 = [data1[0]] * count
+        
+    data[elename] = data1
+    return data
+"""

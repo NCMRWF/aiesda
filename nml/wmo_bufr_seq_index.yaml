@@ -1,0 +1,213 @@
+# WMO BUFR Table D Sequence Descriptors Mapping (Full Spectrum 00-63 Index with Table A Alignment)
+# Format: Descriptor_ID: Variable_Name / Observation_Type
+
+sequence_descriptors:
+  # Category 00 [Matched Table A: Cat 0 - Surface data (land) / Table entries]
+  300001: TableEntries_Sequence_Base
+
+  # Category 01 [Matched Table A: Cat 0 / 1 - Station Identification & Location]
+  301001: StationID
+  301002: StationName
+  301003: StationType
+  301004: StationElevation
+  301011: StationIdentification_BlockStation
+  301012: StationLocation_LatLonElev
+  301013: StationLocation_HighPrecision
+  301021: FixedSurfaceStation_Header
+  301050: Location_Header_Standard
+  301150: Metadata_StationHeaderBlock
+
+  # Category 02 [Matched Table A: Cat 0 / 1 - Surface Data Common Elements]
+  302001: Surface_Common_Header
+  302002: Surface_Common_PressureTemp
+
+  # Category 03 [Matched Table A: Cat 2 - Vertical Soundings (Conventional)]
+  303001: Sounding_Common_Header
+  303002: Sounding_Common_Levels
+
+  # Category 04 [Matched Table A: Cat 3 / 5 / 12 - Satellite Observations]
+  304001: Satellite_Common_ObservationBlock
+
+  # Category 05 [Matched Table A: Cat 13 - Hydrological Data]
+  305001: Hydrological_Common_Sequence
+
+  # Category 06 [Matched Table A: Cat 31 - Oceanographic Data]
+  306001: Oceanographic_Common_Sequence
+
+  # Category 07 [Matched Table A: Cat 0 - Surface Data (Land / SYNOP / METAR)]
+  307080: Surface_LNDSYB # SYNOP Land Report
+  307081: Surface_LNDSYB_Auto
+  307082: Surface_LNDSYB_Mob
+  307090: Surface_METAR
+  307096: Surface_SYNOP_SupplementaryInfo
+
+  # Category 08 [Matched Table A: Cat 1 - Surface Data (Sea / Ships / Buoys)]
+  308001: Surface_SHPSYN # Ship Report
+  308002: Surface_BUOY   # Drifting/Moored Buoy
+  308003: Surface_BUOY_Subsurface
+  308004: Surface_RIG
+  308005: Surface_PLATFORM
+  308009: Surface_CMAN
+
+  # Category 09 [Matched Table A: Cat 2 - Vertical Soundings (TEMP / PILOT)]
+  309050: Sounding_TEMP_Land
+  309051: Sounding_TEMP_Ship
+  309052: Sounding_TEMP_Radiosonde
+  309053: Sounding_PILOT_UpperWind
+  309054: Sounding_PILOT_Ship
+  309055: Sounding_WindProfiler
+
+  # Category 10 [Matched Table A: Cat 3 - Satellite Soundings / ATOVS / GNSS-RO]
+  310001: SatSounding_ATOVS
+  310002: SatSounding_TOVS
+  310008: SatSounding_AIRS_IASI
+  310010: SatSounding_CrIS
+  310070: SatSounding_GNSS_RO
+
+  # Category 11 [Matched Table A: Cat 4 - Single Level Upper-Air (AIREP / AMDAR)]
+  311001: UpperAir_AIREP
+  311002: UpperAir_PIREP
+  311005: UpperAir_AMDAR
+  311009: UpperAir_ACARS
+
+  # Category 12 [Matched Table A: Cat 5 - Single Level Upper-Air (Satellite Winds)]
+  312001: SatWind_AMV
+  312015: SatWind_Scatterometer_ASCAT
+  312020: SatWind_Altimeter_DualFreq
+
+  # Category 13 [Matched Table A: Unassigned / Image Metadata Common Block]
+  313001: Image_HeaderMetadata
+  313002: Image_CalibrationBlock
+
+  # Category 14 [Matched Table A: Cat 14 - Warnings / Reserved]
+  314000: reserved_unassigned
+
+  # Category 15 [Matched Table A: Cat 31 - Oceanographic Data (TESAC / XBT)]
+  315001: Ocean_TESAC
+  315002: Ocean_Bathythermograph_XBT
+  315003: Ocean_ArgoProfileFloat
+  315005: Ocean_SeaLevel_TideGauge
+
+  # Category 16 [Matched Table A: Cat 7 - Synoptic Features / Cyclones]
+  316001: Synoptic_TropicalCycloneTrack
+  316002: Synoptic_FrontalSystem
+
+  # Category 17 [Matched Table A: Cat 31 - Oceanographic Data (Extended)]
+  317001: Ocean_TESAC
+  317002: Ocean_Bathythermograph_XBT
+  317003: Ocean_ArgoProfileFloat
+  317005: Ocean_SeaLevel_TideGauge
+
+  # Category 18 [Matched Table A: Cat 10 - Radiological Data]
+  318001: Radiological_Release_Sequence
+
+  # Category 19 [Matched Table A: Cat 31 - Oceanographic Surface Reports]
+  319001: Ocean_SurfaceDriftBuoy
+  319002: Ocean_MooredOceanBuoy
+
+  # Category 20 [Matched Table A: Cat 13 / 20 - Hydrological / Status Information]
+  320001: Hydro_RiverStage_FlowRate
+
+  # Category 21 [Matched Table A: Cat 6 - Radar Data]
+  321001: Radar_SiteHeader
+  321002: Radar_RadialWind
+  321003: Radar_Reflectivity
+
+  # Category 22 [Matched Table A: Cat 8 - Physical / Chemical Constituents]
+  322001: Atmosphere_OzoneProfile
+  322002: Atmosphere_TotalColumnOzone
+  322005: Atmosphere_AerosolOpticalDepth
+  322008: Atmosphere_GreenhouseGas_CO2_CH4
+
+  # Category 23 [Matched Table A: Cat 15 - Agricultural Meteorological Data]
+  323001: Agromet_SoilMoisture_Temp
+
+  # Category 24 [Matched Table A: Cat 22 - Satellite Radar]
+  324000: reserved_unassigned
+
+  # Category 25 [Matched Table A: Cat 23 - Satellite Lidar / Solar Radiation]
+  325001: Solar_Radiation
+
+  # Category 26 [Matched Table A: Cat 24 - Satellite Scatterometry]
+  326000: reserved_unassigned
+
+  # Category 27 [Matched Table A: Cat 25 - Satellite Altimetry]
+  327000: reserved_unassigned
+
+  # Category 28 [Matched Table A: Cat 26 - Satellite Spectrometry / Air Quality]
+  328001: AirQuality_Monitoring_PM25_PM10
+
+  # Category 29 [Matched Table A: Cat 27 - Satellite Gravity Measurement]
+  329000: reserved_unassigned
+
+  # Category 30 [Matched Table A: Cat 28 - Satellite Precision Orbit]
+  330000: reserved_unassigned
+
+  # Category 31 [Matched Table A: Cat 29 - Satellite Space Environment]
+  331000: reserved_unassigned
+
+  # Category 32 [Matched Table A: Cat 30 - Satellite Calibration Dataset]
+  332000: reserved_unassigned
+
+  # Category 33 [Matched Table A: Unassigned]
+  333000: reserved_unassigned
+
+  # Category 34 [Matched Table A: Unassigned]
+  334000: reserved_unassigned
+
+  # Category 35 [Matched Table A: Unassigned / Monitoring Information]
+  335001: Monitoring_QualityControl_Metadata
+
+  # Category 36 [Matched Table A: Unassigned]
+  336000: reserved_unassigned
+
+  # Category 37 [Matched Table A: Unassigned]
+  337000: reserved_unassigned
+
+  # Category 38 [Matched Table A: Unassigned]
+  338000: reserved_unassigned
+
+  # Category 39 [Matched Table A: Unassigned]
+  339000: reserved_unassigned
+
+  # Category 40 [Matched Table A: Cat 101 - Additional Satellite Products]
+  340001: Sat_Additional_ProductSequence
+
+  # Category 41 [Matched Table A: Unassigned]
+  341000: reserved_unassigned
+
+  # Category 42 [Matched Table A: Unassigned]
+  342000: reserved_unassigned
+
+  # Category 43 [Matched Table A: Unassigned]
+  343000: reserved_unassigned
+
+  # Category 44 [Matched Table A: Unassigned]
+  344000: reserved_unassigned
+
+  # Category 45 [Matched Table A: Unassigned]
+  345000: reserved_unassigned
+
+  # Category 46 [Matched Table A: Unassigned]
+  346000: reserved_unassigned
+
+  # Category 47 [Matched Table A: Unassigned]
+  347000: reserved_unassigned
+
+  # Categories 48 to 63 [Matched Table A: Local / Regional Implementation Blocks]
+  348000: reserved_unassigned
+  349000: reserved_unassigned
+  350000: reserved_unassigned
+  351000: reserved_unassigned
+  352000: reserved_unassigned
+  353000: reserved_unassigned
+  354000: reserved_unassigned
+  355000: reserved_unassigned
+  356000: reserved_unassigned
+  357000: reserved_unassigned
+  358000: reserved_unassigned
+  359000: reserved_unassigned
+  360000: reserved_unassigned
+  361000: reserved_unassigned
+  362000: reserved_unassigned
+  363000: reserved_unassigned

@@ -17,8 +17,9 @@ sys.path.append(OBSDIC)
 OBSNML=os.environ.get('OBSNML',PKGHOME+"/nml")
 sys.path.append(OBSNML)
 
+import yaml
 import wmocode
-#import obsdic
+import obsdic
 import re
 import pandas
 import numpy
@@ -89,7 +90,7 @@ def binary_read(obsfile,pos,size=1,fmtkey="q",binwidth=8):
     data = obsfile.read(size*binwidth)
     data_fmt=">"+str(size)+fmtkey
     val = struct.unpack(data_fmt, data)
-    if size is 1:
+    if size == 1:
         return(val)[0]
     else:
         return(numpy.asarray(val))
@@ -279,7 +280,7 @@ def mask_array(a,missing=numpy.nan):
     #temp = numpy.ma.masked_object(temp,missing)
     return(arry)
 
-def binsort(a,binmin=numpy.NINF,binmax=numpy.inf,missing=None):
+def binsort(a,binmin=-numpy.inf,binmax=numpy.inf,missing=None):
     temp = a.copy()
     if missing is None: missing=[numpy.nan,"nan",'nan','NaN']
     if type(missing) is not list: missing=[missing]
@@ -329,7 +330,7 @@ def append(df,ary):
     return(df)
     
 def unit_convert(values,src_unit=None,req_unit=None,unit_fctr=None):
-    if src_unit is "mb" and req_unit is "Pa" : unit_fctr=100
+    if src_unit == "mb" and req_unit == "Pa" : unit_fctr=100
     if unit_fctr is not None:
         if isinstance(values, (list,)):
             return([int(i)*unit_fctr for i in values])
@@ -725,8 +726,8 @@ def obsdfcat(dataframelist):
 
 def to_string(data,dtype=None):
     if isinstance(data,numpy.ndarray):
-       if dtype is 'float_kind': data=numpy.array2string(data, precision=2, separator=',', threshold=100000, formatter={'float_kind':lambda x: "%.2f" % x})
-       if dtype is 'int' : data=numpy.array2string(data, precision=2, separator=',', threshold=100000, formatter={'int':lambda x: "%0>5d" % x})
+       if dtype == 'float_kind': data=numpy.array2string(data, precision=2, separator=',', threshold=100000, formatter={'float_kind':lambda x: "%.2f" % x})
+       if dtype == 'int' : data=numpy.array2string(data, precision=2, separator=',', threshold=100000, formatter={'int':lambda x: "%0>5d" % x})
     else :
        if isinstance(data, tuple) :
           data=str(data)
@@ -1083,10 +1084,7 @@ def panda_strip(x):
     return pandas.Series(r)
 
 
-def get_key_info(nmlfile, key="obsgroup"):
-    # Convert key to string to match key types reliably
-    key_str = str(key).strip()
-
+def get_nml_info(nmlfile, key="obsgroup"):
     # Peek at the first line to check for headers
     with open(nmlfile, "r") as f:
         first_line = ""
@@ -1117,8 +1115,14 @@ def get_key_info(nmlfile, key="obsgroup"):
 
     # Clean whitespace and inline comments across all cells
     nmlinfo = nmlinfo.apply(panda_strip)
+    return nmlinfo
 
+def get_key_info(nmlfile, key="obsgroup", info=None):
+    # Convert key to string to match key types reliably
+    key_str = str(key).strip()
     # Ensure key comparison works across numeric and string representations
+    nmlinfo=get_nml_info(nmlfile, key="obsgroup")
+    print(nmlinfo)
     nmlinfo["keys_str"] = nmlinfo["keys"].astype(str)
 
     if key_str in nmlinfo["keys_str"].values:
@@ -1127,52 +1131,122 @@ def get_key_info(nmlfile, key="obsgroup"):
     else:
         print(f"Key '{key}' not found in {nmlfile}")
         keyinfo = None
-
     return keyinfo
 
 
 def get_wmo_subtype_name(descriptors=None):
+    print(descriptors)
     # 2. Query wmo_bufr_seq_index for sequence name
     wmo_seq_file = os.path.join(OBSNML, "wmo_bufr_seq_index")
-    seq_key = descriptors[0] if descriptors else 307080
-    seq_name = get_key_info(wmo_seq_file, key=seq_key)  # e.g. "Surface_LNDSYB"
+    i=0
+    #seq_key = descriptors[0] #if descriptors else 307080
+    #seq_name = get_key_info(wmo_seq_file, key=seq_key)  # e.g. "Surface_LNDSYB"
+    seq_name = get_sequence_name(descriptors[i],wmo_seq_file)
+    obstype, subtype_str = seq_name.split("_", 1)
+    if obstype == "Metadata":
+        i=i+1
+        seq_name = get_sequence_name(descriptors[i],wmo_seq_file)
     return seq_name
 
-def get_wmo_obstype(descriptors=None):
-    seq_name = get_wmo_subtype_name(descriptors)
+def get_wmo_obstype(seq_name=None,descriptors=None):
+    if seq_name is None:
+        seq_name = get_wmo_subtype_name(descriptors)
+    print(seq_name)
     obstype, subtype_str = seq_name.split("_", 1)
     #subtype_str = seq_name.replace(obstype, "").strip()
     return obstype
 
-def get_wmo_subtype(descriptors=None):
-    seq_name = get_wmo_subtype_name(descriptors)
+def get_wmo_subtype(seq_name=None,descriptors=None):
+    if seq_name is None:
+        seq_name = get_wmo_subtype_name(descriptors)
     obstype, subtype_str = seq_name.split("_", 1)
     #subtype_str = seq_name.replace(obstype, "").strip()
     return subtype_str
 
-def get_elemlist(subtype_str,nmlfile):
-    # 4. Fetch element list using string key matching keys_surface.nml
-    elemlist = get_key_list_info(nmlfile, f"elemlist_{subtype_str}")
-    return elemlist
+def get_elemlist(nmlfile,info=None,elemlist_key=None,subtypecode=None,seq_name=None,descriptors=None):
+    if elemlist_key is None:
+        if info is not None:
+            elemlist_key=info.get("elemlist_key")
+        else:
+            elemlist_key=f"elemlist_{str(subtypecode)}"
+    #print(elemlist_key)
+    if elemlist_key is not None:
+        # 4. Fetch element list using string key matching keys_surface.nml
+        elemlist = get_key_list_info(nmlfile, elemlist_key)
+        return elemlist
+    else:
+        print("elemlist_key is not available")
+        exit(0)
+
+def get_seq_indx(obstype=None, subtype=None, descriptors=None, wmo_seq_file=None):
+    if obstype is None or subtype is None:
+        obstype=get_wmo_obstype(descriptors=descriptors)
+        subtype=get_wmo_subtype(descriptors=descriptors)
+    seq_dict = get_sequence_dict(wmo_seq_file)
+    for k, v in seq_dict.items():
+        if v == f"{obstype}_{subtype}":
+            return k
+    for k, v in seq_dict.items():
+        if v.lower() == f"{obstype.lower()}_{subtype.lower()}":
+            return k
+    return "Unknown_Sequence"
+
 
 
 def get_subtype_info_from_descriptor(descriptors):
     print(descriptors)
-    descriptor_int = int(descriptors)
     obstype=get_wmo_obstype(descriptors=descriptors)
     subtype=get_wmo_subtype(descriptors=descriptors)
+    seqindx=get_seq_indx(obstype, subtype)
+    print(obstype, subtype, seqindx)
     print(subtype)
     # Retrieve tuple from wmocode dictionary
-    info = wmocode.WMO_DESCRIPTOR_TO_SUBTYPE.get(descriptor_int)
+    info = wmocode.WMO_DESCRIPTOR_TO_SUBTYPE.get(seqindx)
+    print(info)
     return {
         "obstype"   : obstype,
         "subtype"   : subtype,
-        "descode"   : descriptor_int,
+        "descode"   : seqindx,
         "subtype_code": info[0],
         "subtype_name": info[1],
         "elemlist_key": info[2],
     }
 
+
+def get_sequence_dict(wmo_seq_file=None):
+    """
+    Looks up a sequence name by its numeric or string descriptor ID.
+    """
+    if wmo_seq_file is None:
+        wmo_seq_file = os.path.join(OBSNML, "wmo_bufr_seq_index")
+    seq_dict = load_yaml_to_dic(wmo_seq_file)
+    return seq_dict
+
+
+def get_sequence_name(descriptor_id, wmo_seq_file=None):
+    seq_dict = get_sequence_dict(wmo_seq_file)
+    # Convert key to int or str to match format reliably
+    desc_key = int(descriptor_id) if str(descriptor_id).isdigit() else descriptor_id
+    #print(seq_dict)    
+    #print(desc_key)
+    # Check both int and str representations in the loaded dictionary
+    for k, v in seq_dict.items():
+        if int(k) == int(desc_key):
+            return v
+    return "Unknown_Sequence"
+
+def load_yaml_to_dic(yaml_filepath):
+    """
+    Safely loads the WMO BUFR sequence descriptor index YAML file.
+    """
+    try:
+        with open(yaml_filepath, 'r') as f:
+            data = yaml.safe_load(f)
+            # Return the dictionary under 'sequence_descriptors' key
+            return data.get('sequence_descriptors', {})
+    except Exception as e:
+        print(f"Error reading YAML file {yaml_filepath}: {e}")
+        return {}
 
 """
 def panda_strip(x):

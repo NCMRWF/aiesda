@@ -44,7 +44,6 @@ if __name__ == "__main__":
     generated_odb = obscodc.convert_bufr_to_odb(
         bufr_filepath=bufr_filepath, odb_filepath=odb_filepath
     )
-    exit()
     # 3. Read back generated ODB file for verification
     if generated_odb:
         obscodc.read_and_verify_odb(generated_odb)
